@@ -5,9 +5,8 @@ import 'package:superdriver/presentation/themes/colors_custom.dart';
 class LoadingModal {
   static bool _isShowing = false;
 
-  // Show loading modal
   static void show(BuildContext context, {String? message}) {
-    if (_isShowing) return; // Prevent multiple modals
+    if (_isShowing) return;
 
     _isShowing = true;
 
@@ -17,19 +16,24 @@ class LoadingModal {
       barrierColor: Colors.black45,
       useRootNavigator: true,
       builder: (context) => PopScope(
-        canPop: false, // Prevent back button dismiss
+        canPop: false,
         child: Dialog(
+          backgroundColor: ColorsCustom.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(
-                  color: ColorsCustom.primary,
-                  strokeWidth: 3,
+                const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    color: ColorsCustom.primary,
+                    strokeWidth: 3,
+                  ),
                 ),
                 if (message != null) ...[
                   const SizedBox(height: 16),
@@ -49,7 +53,6 @@ class LoadingModal {
     ).then((_) => _isShowing = false);
   }
 
-  // Dismiss loading modal
   static void dismiss(BuildContext context) {
     if (_isShowing) {
       Navigator.of(context, rootNavigator: true).pop();
@@ -57,6 +60,5 @@ class LoadingModal {
     }
   }
 
-  // Check if modal is currently showing
   static bool get isShowing => _isShowing;
 }

@@ -1,5 +1,3 @@
-// lib/domain/bloc/profile/profile_state.dart
-
 part of 'profile_bloc.dart';
 
 abstract class ProfileState extends Equatable {
@@ -22,10 +20,19 @@ class ProfileLoaded extends ProfileState {
 
   const ProfileLoaded({required this.profileData});
 
-  String get firstName => profileData['first_name']?.toString() ?? '';
-  String get lastName => profileData['last_name']?.toString() ?? '';
+  String get firstName {
+    return (profileData['first_name'] ?? '').toString();
+  }
+
+  String get lastName {
+    return (profileData['last_name'] ?? '').toString();
+  }
+
   String get fullName => '$firstName $lastName'.trim();
-  String get phoneNumber => profileData['phone_number']?.toString() ?? '';
+
+  String get phoneNumber {
+    return (profileData['phone_number'] ?? '').toString();
+  }
 
   String get initials {
     String first = firstName.isNotEmpty ? firstName[0] : '';

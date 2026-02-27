@@ -1,3 +1,5 @@
+import 'package:superdriver/data/env/environment.dart';
+
 class Order {
   final int id;
   final String orderNumber;
@@ -9,6 +11,7 @@ class Order {
   final int? driverId;
   final String? driverName;
   final String? driverPhone;
+  final bool isDriverRated;
   final String paymentMethod;
   final String paymentMethodDisplay;
   final String paymentStatus;
@@ -21,24 +24,24 @@ class Order {
   final String itemsCount;
   final bool canCancel;
   final bool canReview;
-  final String? restaurantSnapshot;
-  final String? addressSnapshot;
-  final String? itemsSnapshot;
+  final RestaurantSnapshot? restaurantSnapshot;
+  final AddressSnapshot? addressSnapshot;
+  final List<ItemSnapshot>? itemsSnapshot;
   final String? notes;
   final String? specialInstructions;
+  final String? contactPhone;
+  final bool isScheduled;
+  final DateTime? scheduledDeliveryTime;
   final DateTime? placedAt;
-  final DateTime? acceptedAt;
   final DateTime? preparingAt;
-  final DateTime? readyAt;
   final DateTime? pickedAt;
   final DateTime? deliveredAt;
-  final DateTime? completedAt;
   final DateTime? cancelledAt;
   final DateTime? estimatedDeliveryTime;
   final String? cancellationReason;
   final List<OrderItem> items;
   final List<OrderStatusHistory> statusHistory;
-  final String? trackingInfo;
+  final TrackingInfo? trackingInfo;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -53,6 +56,7 @@ class Order {
     this.driverId,
     this.driverName,
     this.driverPhone,
+    this.isDriverRated = false,
     required this.paymentMethod,
     required this.paymentMethodDisplay,
     required this.paymentStatus,
@@ -70,13 +74,13 @@ class Order {
     this.itemsSnapshot,
     this.notes,
     this.specialInstructions,
+    this.contactPhone,
+    required this.isScheduled,
+    this.scheduledDeliveryTime,
     this.placedAt,
-    this.acceptedAt,
     this.preparingAt,
-    this.readyAt,
     this.pickedAt,
     this.deliveredAt,
-    this.completedAt,
     this.cancelledAt,
     this.estimatedDeliveryTime,
     this.cancellationReason,
@@ -95,10 +99,11 @@ class Order {
       statusDisplay: json['status_display'] ?? '',
       restaurantId: json['restaurant'] ?? 0,
       restaurantName: json['restaurant_name'] ?? '',
-      restaurantLogo: json['restaurant_logo'],
+      restaurantLogo: _fixImageUrl(json['restaurant_logo']),
       driverId: json['driver'],
       driverName: json['driver_name'],
       driverPhone: json['driver_phone'],
+      isDriverRated: json['is_driver_rated'] == true,
       paymentMethod: json['payment_method'] ?? 'cash',
       paymentMethodDisplay: json['payment_method_display'] ?? '',
       paymentStatus: json['payment_status'] ?? 'pending',
@@ -111,30 +116,42 @@ class Order {
       itemsCount: json['items_count']?.toString() ?? '0',
       canCancel: _parseBool(json['can_cancel']),
       canReview: _parseBool(json['can_review']),
-      restaurantSnapshot: json['restaurant_snapshot'],
-      addressSnapshot: json['address_snapshot'],
-      itemsSnapshot: json['items_snapshot'],
+      restaurantSnapshot: json['restaurant_snapshot'] != null
+          ? RestaurantSnapshot.fromJson(json['restaurant_snapshot'])
+          : null,
+      addressSnapshot: json['address_snapshot'] != null
+          ? AddressSnapshot.fromJson(json['address_snapshot'])
+          : null,
+      itemsSnapshot: json['items_snapshot'] != null
+          ? (json['items_snapshot'] as List)
+                .map((item) => ItemSnapshot.fromJson(item))
+                .toList()
+          : null,
       notes: json['notes'],
       specialInstructions: json['special_instructions'],
+      contactPhone: json['contact_phone'],
+      isScheduled: json['is_scheduled'] ?? false,
+      scheduledDeliveryTime: _parseDateTime(json['scheduled_delivery_time']),
       placedAt: _parseDateTime(json['placed_at']),
-      acceptedAt: _parseDateTime(json['accepted_at']),
       preparingAt: _parseDateTime(json['preparing_at']),
-      readyAt: _parseDateTime(json['ready_at']),
       pickedAt: _parseDateTime(json['picked_at']),
       deliveredAt: _parseDateTime(json['delivered_at']),
-      completedAt: _parseDateTime(json['completed_at']),
       cancelledAt: _parseDateTime(json['cancelled_at']),
       estimatedDeliveryTime: _parseDateTime(json['estimated_delivery_time']),
       cancellationReason: json['cancellation_reason'],
-      items: (json['items'] as List<dynamic>?)
+      items:
+          (json['items'] as List<dynamic>?)
               ?.map((item) => OrderItem.fromJson(item))
               .toList() ??
           [],
-      statusHistory: (json['status_history'] as List<dynamic>?)
+      statusHistory:
+          (json['status_history'] as List<dynamic>?)
               ?.map((item) => OrderStatusHistory.fromJson(item))
               .toList() ??
           [],
-      trackingInfo: json['tracking_info'],
+      trackingInfo: json['tracking_info'] != null
+          ? TrackingInfo.fromJson(json['tracking_info'])
+          : null,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
     );
@@ -152,14 +169,236 @@ class Order {
     return DateTime.tryParse(value.toString());
   }
 
+  /// Fix relative URLs by prepending base URL from Environment
+  static String? _fixImageUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/')) {
+      return '${Environment.baseUrl}$url';
+    }
+    return '${Environment.baseUrl}/$url';
+  }
+
   double get totalDouble => double.tryParse(total) ?? 0;
   double get subtotalDouble => double.tryParse(subtotal) ?? 0;
   double get deliveryFeeDouble => double.tryParse(deliveryFee) ?? 0;
   double get discountAmountDouble => double.tryParse(discountAmount) ?? 0;
 
-  bool get isActive => !['completed', 'cancelled', 'delivered'].contains(status);
-  bool get isCompleted => status == 'completed' || status == 'delivered';
+  bool get isActive => !['delivered', 'cancelled'].contains(status);
+  bool get isCompleted => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
+
+  /// Check if order can be cancelled (only draft and placed statuses)
+  bool get canBeCancelled => canCancel && ['draft', 'placed'].contains(status);
+}
+
+class RestaurantSnapshot {
+  final int id;
+  final String name;
+  final String? nameEn;
+  final String? logo;
+  final String? phone;
+  final String? address;
+  final String? deliveryTimeEstimate;
+
+  RestaurantSnapshot({
+    required this.id,
+    required this.name,
+    this.nameEn,
+    this.logo,
+    this.phone,
+    this.address,
+    this.deliveryTimeEstimate,
+  });
+
+  factory RestaurantSnapshot.fromJson(Map<String, dynamic> json) {
+    return RestaurantSnapshot(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      nameEn: json['name_en'],
+      logo: Order._fixImageUrl(json['logo']),
+      phone: json['phone'],
+      address: json['address'],
+      deliveryTimeEstimate: json['delivery_time_estimate'],
+    );
+  }
+}
+
+class AddressSnapshot {
+  final int id;
+  final String title;
+  final String governorate;
+  final String area;
+  final String street;
+  final String? buildingNumber;
+  final String? floor;
+  final String? apartment;
+  final String? landmark;
+  final String fullAddress;
+  final String? latitude;
+  final String? longitude;
+
+  AddressSnapshot({
+    required this.id,
+    required this.title,
+    required this.governorate,
+    required this.area,
+    required this.street,
+    this.buildingNumber,
+    this.floor,
+    this.apartment,
+    this.landmark,
+    required this.fullAddress,
+    this.latitude,
+    this.longitude,
+  });
+
+  factory AddressSnapshot.fromJson(Map<String, dynamic> json) {
+    return AddressSnapshot(
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      governorate: json['governorate'] ?? '',
+      area: json['area'] ?? '',
+      street: json['street'] ?? '',
+      buildingNumber: json['building_number'],
+      floor: json['floor'],
+      apartment: json['apartment'],
+      landmark: json['landmark'],
+      fullAddress: json['full_address'] ?? '',
+      latitude: json['latitude'],
+      longitude: json['longitude'],
+    );
+  }
+
+  /// Get formatted address for display
+  String get formattedAddress {
+    List<String> parts = [];
+
+    if (governorate.isNotEmpty) parts.add(governorate);
+    if (area.isNotEmpty) parts.add(area);
+    if (street.isNotEmpty) parts.add(street);
+
+    return parts.join('، ');
+  }
+
+  /// Get building details if available
+  String? get buildingDetails {
+    List<String> details = [];
+
+    if (buildingNumber != null && buildingNumber!.isNotEmpty) {
+      details.add('مبنى $buildingNumber');
+    }
+    if (floor != null && floor!.isNotEmpty) {
+      details.add('طابق $floor');
+    }
+    if (apartment != null && apartment!.isNotEmpty) {
+      details.add('شقة $apartment');
+    }
+
+    return details.isNotEmpty ? details.join(' - ') : null;
+  }
+}
+
+class ItemSnapshot {
+  final int productId;
+  final String productName;
+  final String? productImage;
+  final String basePrice;
+  final String currentPrice;
+  final int quantity;
+  final dynamic variation;
+  final List<dynamic> addons;
+  final String? specialInstructions;
+  final String unitPrice;
+  final String totalPrice;
+
+  ItemSnapshot({
+    required this.productId,
+    required this.productName,
+    this.productImage,
+    required this.basePrice,
+    required this.currentPrice,
+    required this.quantity,
+    this.variation,
+    required this.addons,
+    this.specialInstructions,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  factory ItemSnapshot.fromJson(Map<String, dynamic> json) {
+    return ItemSnapshot(
+      productId: json['product_id'] ?? 0,
+      productName: json['product_name'] ?? '',
+      productImage: json['product_image'],
+      basePrice: json['base_price']?.toString() ?? '0',
+      currentPrice: json['current_price']?.toString() ?? '0',
+      quantity: json['quantity'] ?? 1,
+      variation: json['variation'],
+      addons: json['addons'] ?? [],
+      specialInstructions: json['special_instructions'],
+      unitPrice: json['unit_price']?.toString() ?? '0',
+      totalPrice: json['total_price']?.toString() ?? '0',
+    );
+  }
+}
+
+class TrackingInfo {
+  final String orderNumber;
+  final String status;
+  final String statusDisplay;
+  final DateTime? placedAt;
+  final DateTime? preparingAt;
+  final DateTime? pickedAt;
+  final DateTime? deliveredAt;
+  final DateTime? estimatedDeliveryTime;
+  final bool isScheduled;
+  final DateTime? scheduledDeliveryTime;
+  final dynamic driver;
+
+  TrackingInfo({
+    required this.orderNumber,
+    required this.status,
+    required this.statusDisplay,
+    this.placedAt,
+    this.preparingAt,
+    this.pickedAt,
+    this.deliveredAt,
+    this.estimatedDeliveryTime,
+    required this.isScheduled,
+    this.scheduledDeliveryTime,
+    this.driver,
+  });
+
+  factory TrackingInfo.fromJson(Map<String, dynamic> json) {
+    return TrackingInfo(
+      orderNumber: json['order_number'] ?? '',
+      status: json['status'] ?? '',
+      statusDisplay: json['status_display'] ?? '',
+      placedAt: json['placed_at'] != null
+          ? DateTime.tryParse(json['placed_at'])
+          : null,
+      preparingAt: json['preparing_at'] != null
+          ? DateTime.tryParse(json['preparing_at'])
+          : null,
+      pickedAt: json['picked_at'] != null
+          ? DateTime.tryParse(json['picked_at'])
+          : null,
+      deliveredAt: json['delivered_at'] != null
+          ? DateTime.tryParse(json['delivered_at'])
+          : null,
+      estimatedDeliveryTime: json['estimated_delivery_time'] != null
+          ? DateTime.tryParse(json['estimated_delivery_time'])
+          : null,
+      isScheduled: json['is_scheduled'] ?? false,
+      scheduledDeliveryTime: json['scheduled_delivery_time'] != null
+          ? DateTime.tryParse(json['scheduled_delivery_time'])
+          : null,
+      driver: json['driver'],
+    );
+  }
 }
 
 class OrderItem {
@@ -173,7 +412,7 @@ class OrderItem {
   final String unitPrice;
   final String totalPrice;
   final String? specialInstructions;
-  final String? productSnapshot;
+  final ProductSnapshot? productSnapshot;
   final List<OrderItemAddon> addons;
 
   OrderItem({
@@ -203,8 +442,11 @@ class OrderItem {
       unitPrice: json['unit_price']?.toString() ?? '0',
       totalPrice: json['total_price']?.toString() ?? '0',
       specialInstructions: json['special_instructions'],
-      productSnapshot: json['product_snapshot'],
-      addons: (json['addons'] as List<dynamic>?)
+      productSnapshot: json['product_snapshot'] != null
+          ? ProductSnapshot.fromJson(json['product_snapshot'])
+          : null,
+      addons:
+          (json['addons'] as List<dynamic>?)
               ?.map((addon) => OrderItemAddon.fromJson(addon))
               .toList() ??
           [],
@@ -213,6 +455,32 @@ class OrderItem {
 
   double get unitPriceDouble => double.tryParse(unitPrice) ?? 0;
   double get totalPriceDouble => double.tryParse(totalPrice) ?? 0;
+}
+
+class ProductSnapshot {
+  final int id;
+  final String name;
+  final String? nameEn;
+  final String? image;
+  final String basePrice;
+
+  ProductSnapshot({
+    required this.id,
+    required this.name,
+    this.nameEn,
+    this.image,
+    required this.basePrice,
+  });
+
+  factory ProductSnapshot.fromJson(Map<String, dynamic> json) {
+    return ProductSnapshot(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      nameEn: json['name_en'],
+      image: json['image'],
+      basePrice: json['base_price']?.toString() ?? '0',
+    );
+  }
 }
 
 class OrderItemAddon {
@@ -294,6 +562,8 @@ class OrderListItem {
   final String itemsCount;
   final String paymentMethod;
   final String paymentMethodDisplay;
+  final bool isScheduled;
+  final DateTime? scheduledDeliveryTime;
   final DateTime createdAt;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
@@ -310,6 +580,8 @@ class OrderListItem {
     required this.itemsCount,
     required this.paymentMethod,
     required this.paymentMethodDisplay,
+    required this.isScheduled,
+    this.scheduledDeliveryTime,
     required this.createdAt,
     this.placedAt,
     this.deliveredAt,
@@ -323,11 +595,15 @@ class OrderListItem {
       statusDisplay: json['status_display'] ?? '',
       restaurantId: json['restaurant'] ?? 0,
       restaurantName: json['restaurant_name'] ?? '',
-      restaurantLogo: json['restaurant_logo'],
+      restaurantLogo: Order._fixImageUrl(json['restaurant_logo']),
       total: json['total']?.toString() ?? '0',
       itemsCount: json['items_count']?.toString() ?? '0',
       paymentMethod: json['payment_method'] ?? 'cash',
       paymentMethodDisplay: json['payment_method_display'] ?? '',
+      isScheduled: json['is_scheduled'] ?? false,
+      scheduledDeliveryTime: json['scheduled_delivery_time'] != null
+          ? DateTime.tryParse(json['scheduled_delivery_time'])
+          : null,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       placedAt: json['placed_at'] != null
           ? DateTime.tryParse(json['placed_at'])
@@ -339,26 +615,37 @@ class OrderListItem {
   }
 
   double get totalDouble => double.tryParse(total) ?? 0;
-  bool get isActive => !['completed', 'cancelled', 'delivered'].contains(status);
-  bool get isCompleted => status == 'completed' || status == 'delivered';
+  bool get isActive => !['delivered', 'cancelled'].contains(status);
+  bool get isCompleted => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
 }
 
 class CreateOrderRequest {
+  final int cartId;
   final int deliveryAddressId;
   final String paymentMethod;
+  final String? contactPhone;
+  final DateTime? scheduledDeliveryTime;
   final String? notes;
 
   CreateOrderRequest({
+    required this.cartId,
     required this.deliveryAddressId,
     this.paymentMethod = 'cash',
+    this.contactPhone,
+    this.scheduledDeliveryTime,
     this.notes,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'cart_id': cartId,
       'delivery_address_id': deliveryAddressId,
       'payment_method': paymentMethod,
+      if (contactPhone != null && contactPhone!.isNotEmpty)
+        'contact_phone': contactPhone,
+      if (scheduledDeliveryTime != null)
+        'scheduled_delivery_time': scheduledDeliveryTime!.toIso8601String(),
       if (notes != null && notes!.isNotEmpty) 'notes': notes,
     };
   }

@@ -103,15 +103,60 @@ class AllCartsResponse {
   bool get hasReachedLimit => count >= maxAllowed;
 }
 
+/// Cart item preview for items_preview in CartSummary
+/// API Response: {id: 49, product_name: شيش طاووق, quantity: 1, total_price: 120.00}
+class CartItemPreview {
+  final int id;
+  final String productName;
+  final String? productNameEn;
+  final int quantity;
+  final double totalPrice;
+
+  const CartItemPreview({
+    required this.id,
+    required this.productName,
+    this.productNameEn,
+    required this.quantity,
+    required this.totalPrice,
+  });
+
+  factory CartItemPreview.fromJson(Map<String, dynamic> json) {
+    return CartItemPreview(
+      id: json['id'] ?? 0,
+      productName: json['product_name'] ?? '',
+      productNameEn: json['product_name_en'],
+      quantity: json['quantity'] ?? 1,
+      totalPrice: _parseDouble(json['total_price']),
+    );
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  /// Get localized name based on locale
+  String getLocalizedName(bool isArabic) {
+    if (!isArabic && productNameEn != null && productNameEn!.isNotEmpty) {
+      return productNameEn!;
+    }
+    return productName;
+  }
+}
+
 /// Cart summary for the all carts list
 class CartSummary {
   final int id;
   final int restaurantId;
   final String restaurantName;
+  final String? restaurantNameEn;
   final String? restaurantLogo;
   final int itemsCount;
   final String total;
-  final List<String> itemsPreview;
+  final List<CartItemPreview> itemsPreview;
   final DateTime? expiresAt;
   final int? timeRemainingSeconds;
   final DateTime createdAt;
@@ -121,6 +166,7 @@ class CartSummary {
     required this.id,
     required this.restaurantId,
     required this.restaurantName,
+    this.restaurantNameEn,
     this.restaurantLogo,
     required this.itemsCount,
     required this.total,
@@ -136,14 +182,11 @@ class CartSummary {
       id: json['id'] ?? 0,
       restaurantId: json['restaurant_id'] ?? 0,
       restaurantName: json['restaurant_name'] ?? '',
+      restaurantNameEn: json['restaurant_name_en'],
       restaurantLogo: json['restaurant_logo'],
       itemsCount: json['items_count'] ?? 0,
       total: json['total']?.toString() ?? '0',
-      itemsPreview:
-          (json['items_preview'] as List<dynamic>?)
-              ?.map((item) => item.toString())
-              .toList() ??
-          [],
+      itemsPreview: _parseItemsPreview(json['items_preview']),
       expiresAt: json['expires_at'] != null
           ? DateTime.tryParse(json['expires_at'])
           : null,
@@ -153,12 +196,52 @@ class CartSummary {
     );
   }
 
+  /// Parse items_preview - handles both object format and legacy string format
+  static List<CartItemPreview> _parseItemsPreview(dynamic itemsPreviewJson) {
+    if (itemsPreviewJson == null) return [];
+    if (itemsPreviewJson is! List) return [];
+
+    return itemsPreviewJson.map((item) {
+      if (item is Map<String, dynamic>) {
+        return CartItemPreview.fromJson(item);
+      } else if (item is String) {
+        // Fallback for old format (string list)
+        return CartItemPreview(
+          id: 0,
+          productName: item,
+          quantity: 1,
+          totalPrice: 0.0,
+        );
+      }
+      return CartItemPreview(
+        id: 0,
+        productName: item.toString(),
+        quantity: 1,
+        totalPrice: 0.0,
+      );
+    }).toList();
+  }
+
   double get totalDouble => double.tryParse(total) ?? 0;
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
+
+  bool get isExpiringSoon =>
+      timeRemainingSeconds != null && timeRemainingSeconds! < 600;
+
+  /// Get localized restaurant name based on locale
+  String getLocalizedRestaurantName(bool isArabic) {
+    if (!isArabic && restaurantNameEn != null && restaurantNameEn!.isNotEmpty) {
+      return restaurantNameEn!;
+    }
+    return restaurantName;
+  }
 }
 
 class CartRestaurant {
   final int id;
   final String name;
+  final String? nameEn;
   final String slug;
   final String? logo;
   final String restaurantType;
@@ -166,6 +249,7 @@ class CartRestaurant {
   CartRestaurant({
     required this.id,
     required this.name,
+    this.nameEn,
     required this.slug,
     this.logo,
     required this.restaurantType,
@@ -175,10 +259,19 @@ class CartRestaurant {
     return CartRestaurant(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
+      nameEn: json['name_en'],
       slug: json['slug'] ?? '',
       logo: json['logo'],
       restaurantType: json['restaurant_type'] ?? 'food',
     );
+  }
+
+  /// Get localized name based on locale
+  String getLocalizedName(bool isArabic) {
+    if (!isArabic && nameEn != null && nameEn!.isNotEmpty) {
+      return nameEn!;
+    }
+    return name;
   }
 }
 
@@ -235,6 +328,7 @@ class CartItem {
 class CartProduct {
   final int id;
   final String name;
+  final String? nameEn;
   final String? image;
   final String basePrice;
   final String currentPrice;
@@ -242,6 +336,7 @@ class CartProduct {
   CartProduct({
     required this.id,
     required this.name,
+    this.nameEn,
     this.image,
     required this.basePrice,
     required this.currentPrice,
@@ -251,6 +346,7 @@ class CartProduct {
     return CartProduct(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
+      nameEn: json['name_en'],
       image: json['image'],
       basePrice: json['base_price']?.toString() ?? '0',
       currentPrice: json['current_price']?.toString() ?? '0',
@@ -258,6 +354,14 @@ class CartProduct {
   }
 
   double get currentPriceDouble => double.tryParse(currentPrice) ?? 0;
+
+  /// Get localized name based on locale
+  String getLocalizedName(bool isArabic) {
+    if (!isArabic && nameEn != null && nameEn!.isNotEmpty) {
+      return nameEn!;
+    }
+    return name;
+  }
 }
 
 class CartVariation {
@@ -287,12 +391,21 @@ class CartVariation {
       isAvailable: json['is_available'] ?? true,
     );
   }
+
+  /// Get localized name based on locale
+  String getLocalizedName(bool isArabic) {
+    if (!isArabic && nameEn != null && nameEn!.isNotEmpty) {
+      return nameEn!;
+    }
+    return name;
+  }
 }
 
 class CartItemAddon {
   final int id;
   final int addonId;
   final String addonName;
+  final String? addonNameEn;
   final String addonPrice;
   final int quantity;
   final String totalPrice;
@@ -301,6 +414,7 @@ class CartItemAddon {
     required this.id,
     required this.addonId,
     required this.addonName,
+    this.addonNameEn,
     required this.addonPrice,
     required this.quantity,
     required this.totalPrice,
@@ -311,10 +425,19 @@ class CartItemAddon {
       id: json['id'] ?? 0,
       addonId: json['addon'] ?? 0,
       addonName: json['addon_name'] ?? '',
+      addonNameEn: json['addon_name_en'],
       addonPrice: json['addon_price']?.toString() ?? '0',
       quantity: json['quantity'] ?? 1,
       totalPrice: json['total_price']?.toString() ?? '0',
     );
+  }
+
+  /// Get localized name based on locale
+  String getLocalizedName(bool isArabic) {
+    if (!isArabic && addonNameEn != null && addonNameEn!.isNotEmpty) {
+      return addonNameEn!;
+    }
+    return addonName;
   }
 }
 

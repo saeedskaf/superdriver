@@ -14,6 +14,7 @@ class SecureStorage {
   static const String _keyLastName = 'last_name';
   static const String _keyIsVerified = 'is_verified';
   static const String _keyLocale = 'app_locale';
+  static const String _keyPushNotifications = 'push_notifications_enabled';
 
   // Save access token
   Future<void> persistenToken(String token) async {
@@ -139,6 +140,21 @@ class SecureStorage {
   /// Clear locale preference
   Future<void> clearLocale() async {
     await _storage.delete(key: _keyLocale);
+  }
+
+  // ============================================
+  // Push Notifications Preference
+  // ============================================
+
+  /// Save push notifications preference
+  Future<void> savePushNotificationsEnabled(bool enabled) async {
+    await _storage.write(key: _keyPushNotifications, value: enabled.toString());
+  }
+
+  /// Get push notifications preference (default: true)
+  Future<bool> getPushNotificationsEnabled() async {
+    final value = await _storage.read(key: _keyPushNotifications);
+    return value != 'false';
   }
 }
 

@@ -93,6 +93,19 @@ class Address extends Equatable {
     };
   }
 
+  /// Convert to AddressSummary for list display
+  AddressSummary toSummary() {
+    return AddressSummary(
+      id: id,
+      title: title,
+      governorateName: governorateName,
+      areaName: areaName,
+      isCurrent: isCurrent,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
   Address copyWith({
     int? id,
     String? title,
@@ -165,6 +178,8 @@ class AddressSummary extends Equatable {
   final String governorateName;
   final String areaName;
   final bool isCurrent;
+  final double? latitude;
+  final double? longitude;
 
   const AddressSummary({
     required this.id,
@@ -172,6 +187,8 @@ class AddressSummary extends Equatable {
     required this.governorateName,
     required this.areaName,
     required this.isCurrent,
+    this.latitude,
+    this.longitude,
   });
 
   factory AddressSummary.fromJson(Map<String, dynamic> json) {
@@ -181,9 +198,27 @@ class AddressSummary extends Equatable {
       governorateName: json['governorate_name'] ?? '',
       areaName: json['area_name'] ?? '',
       isCurrent: json['is_current'] ?? false,
+      latitude: _parseDouble(json['latitude']),
+      longitude: _parseDouble(json['longitude']),
     );
   }
 
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   @override
-  List<Object?> get props => [id, title, governorateName, areaName, isCurrent];
+  List<Object?> get props => [
+    id,
+    title,
+    governorateName,
+    areaName,
+    isCurrent,
+    latitude,
+    longitude,
+  ];
 }

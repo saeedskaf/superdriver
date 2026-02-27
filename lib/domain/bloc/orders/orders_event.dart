@@ -29,18 +29,31 @@ class OrderDetailsLoadRequested extends OrdersEvent {
 }
 
 class OrderCreateRequested extends OrdersEvent {
+  final int cartId;
   final int deliveryAddressId;
   final String paymentMethod;
+  final String? contactPhone;
+  final DateTime? scheduledDeliveryTime;
   final String? notes;
 
   const OrderCreateRequested({
+    required this.cartId,
     required this.deliveryAddressId,
     this.paymentMethod = 'cash',
+    this.contactPhone,
+    this.scheduledDeliveryTime,
     this.notes,
   });
 
   @override
-  List<Object?> get props => [deliveryAddressId, paymentMethod, notes];
+  List<Object?> get props => [
+    cartId,
+    deliveryAddressId,
+    paymentMethod,
+    contactPhone,
+    scheduledDeliveryTime,
+    notes,
+  ];
 }
 
 class OrderPlaceRequested extends OrdersEvent {
@@ -56,10 +69,7 @@ class OrderCancelRequested extends OrdersEvent {
   final int orderId;
   final String reason;
 
-  const OrderCancelRequested({
-    required this.orderId,
-    required this.reason,
-  });
+  const OrderCancelRequested({required this.orderId, required this.reason});
 
   @override
   List<Object?> get props => [orderId, reason];

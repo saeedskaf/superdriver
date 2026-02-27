@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:superdriver/data/env/environment.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
@@ -8,7 +9,7 @@ class ProfileService {
     final accessToken = await secureStorage.getAccessToken();
     return {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer $accessToken',
+      if (accessToken != null) 'Authorization': 'Bearer $accessToken',
     };
   }
 
@@ -26,7 +27,7 @@ class ProfileService {
     if (responseBody['detail'] != null) {
       return responseBody['detail'].toString();
     }
-    return 'حدث خطأ غير متوقع';
+    return 'Unexpected error';
   }
 
   /// GET /api/auth/profile/
@@ -36,12 +37,15 @@ class ProfileService {
 
     final response = await http.get(uri, headers: headers);
     final responseBody = jsonDecode(response.body);
-    print('GET Profile Response: $responseBody');
+    log('GET Profile Response: $responseBody');
 
     if (response.statusCode == 200) {
+      if (responseBody['user'] != null) {
+        return Map<String, dynamic>.from(responseBody['user']);
+      }
       return responseBody;
     } else if (response.statusCode == 401) {
-      throw Exception('جلسة المستخدم منتهية، يرجى تسجيل الدخول مرة أخرى');
+      throw Exception('Session expired');
     } else {
       throw Exception(_extractErrorMessage(responseBody));
     }
@@ -66,16 +70,23 @@ class ProfileService {
     );
 
     final responseBody = jsonDecode(response.body);
-    print('PATCH Profile Response: $responseBody');
+    log('PATCH Profile Response: $responseBody');
 
     if (response.statusCode == 200) {
+      Map<String, dynamic> userData;
+      if (responseBody['user'] != null) {
+        userData = Map<String, dynamic>.from(responseBody['user']);
+      } else {
+        userData = responseBody;
+      }
+
       await secureStorage.updateUserData(
-        firstName: responseBody['first_name'],
-        lastName: responseBody['last_name'],
+        firstName: userData['first_name'],
+        lastName: userData['last_name'],
       );
-      return responseBody;
+      return userData;
     } else if (response.statusCode == 401) {
-      throw Exception('جلسة المستخدم منتهية، يرجى تسجيل الدخول مرة أخرى');
+      throw Exception('Session expired');
     } else {
       throw Exception(_extractErrorMessage(responseBody));
     }
@@ -100,14 +111,12 @@ class ProfileService {
       }),
     );
 
-    print('Change Password Response Status: ${response.statusCode}');
+    log('Change Password Response Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       return;
-    } else if (response.statusCode == 400) {
-      throw Exception('كلمة المرور الحالية غير صحيحة');
     } else if (response.statusCode == 401) {
-      throw Exception('جلسة المستخدم منتهية، يرجى تسجيل الدخول مرة أخرى');
+      throw Exception('Session expired');
     } else {
       final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));

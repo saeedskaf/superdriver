@@ -25,7 +25,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
     try {
-      final response = await authServices.register(
+      await authServices.register(
         firstName: event.firstName,
         lastName: event.lastName,
         phone: event.phone,
@@ -33,17 +33,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         confirmPassword: event.password,
       );
 
-      final String phoneNumber =
-          response['phone_number']?.toString() ?? event.phone;
-
       emit(
         AuthOtpSent(
-          phone: phoneNumber,
+          phone: event.phone,
           verificationId: 'signup_otp',
           userData: {
             'firstName': event.firstName,
             'lastName': event.lastName,
-            'phone': phoneNumber,
+            'phone': event.phone,
             'password': event.password,
           },
         ),
@@ -61,12 +58,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final response = await authServices.login(event.phone, event.password);
 
-      // Validate response structure
       if (response['tokens'] == null || response['user'] == null) {
         throw Exception('Invalid server response');
       }
 
-      // Extract tokens safely
       final tokens = response['tokens'] as Map<String, dynamic>;
       final String accessToken = tokens['access']?.toString() ?? '';
       final String refreshToken = tokens['refresh']?.toString() ?? '';
@@ -75,11 +70,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         throw Exception('No access token received');
       }
 
-      // Create User model from response
       final userJson = response['user'] as Map<String, dynamic>;
       final user = User.fromJson(userJson);
 
-      // Save all data to secure storage
       await secureStorage.saveUserData(
         accessToken: accessToken,
         refreshToken: refreshToken,
@@ -90,7 +83,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         isVerified: user.isVerified,
       );
 
-      // Emit authenticated state with User model
       emit(AuthAuthenticated(user: user));
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
@@ -109,11 +101,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         otpType: 'signup',
       );
 
-      final userData = event.userData;
-      if (userData != null) {
-        // Registration flow - just verify OTP
-        emit(const AuthRegistrationSuccess());
-      }
+      emit(const AuthRegistrationSuccess());
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }

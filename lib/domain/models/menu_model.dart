@@ -36,7 +36,8 @@ class MenuCategory {
       image: json['image'],
       isActive: json['is_active'] ?? false,
       order: json['order'] ?? 0,
-      subcategories: (json['subcategories'] as List<dynamic>?)
+      subcategories:
+          (json['subcategories'] as List<dynamic>?)
               ?.map((e) => SubCategory.fromJson(e))
               .toList() ??
           [],
@@ -88,6 +89,8 @@ class ProductSimpleMenu {
   final String name;
   final String? nameEn;
   final String slug;
+  final String? description; // ADDED: from API response
+  final String? descriptionEn; // ADDED: from API response
   final String? image;
   final String basePrice;
   final String currentPrice;
@@ -107,6 +110,8 @@ class ProductSimpleMenu {
     required this.name,
     this.nameEn,
     required this.slug,
+    this.description,
+    this.descriptionEn,
     this.image,
     required this.basePrice,
     required this.currentPrice,
@@ -128,6 +133,8 @@ class ProductSimpleMenu {
       name: json['name'] ?? '',
       nameEn: json['name_en'],
       slug: json['slug'] ?? '',
+      description: json['description'], // ADDED
+      descriptionEn: json['description_en'], // ADDED
       image: json['image'],
       basePrice: json['base_price']?.toString() ?? '0',
       currentPrice: json['current_price']?.toString() ?? '0',
@@ -243,15 +250,18 @@ class ProductDetail {
       isAvailable: json['is_available'] ?? true,
       isFeatured: json['is_featured'] ?? false,
       isPopular: json['is_popular'] ?? false,
-      variations: (json['variations'] as List<dynamic>?)
+      variations:
+          (json['variations'] as List<dynamic>?)
               ?.map((e) => ProductVariation.fromJson(e))
               .toList() ??
           [],
-      addons: (json['addons'] as List<dynamic>?)
+      addons:
+          (json['addons'] as List<dynamic>?)
               ?.map((e) => ProductAddon.fromJson(e))
               .toList() ??
           [],
-      images: (json['images'] as List<dynamic>?)
+      images:
+          (json['images'] as List<dynamic>?)
               ?.map((e) => ProductImage.fromJson(e))
               .toList() ??
           [],
@@ -344,11 +354,7 @@ class ProductImage {
   final String image;
   final int order;
 
-  ProductImage({
-    required this.id,
-    required this.image,
-    required this.order,
-  });
+  ProductImage({required this.id, required this.image, required this.order});
 
   factory ProductImage.fromJson(Map<String, dynamic> json) {
     return ProductImage(

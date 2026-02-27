@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/screens/main/main_screen.dart';
+import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,7 +25,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _initAnimation();
-    // Trigger auth check immediately after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<AuthBloc>().add(const AuthCheckStatus());
@@ -45,7 +44,6 @@ class _SplashScreenState extends State<SplashScreen>
           setState(() {
             _animationCompleted = true;
           });
-          // Check current auth state when animation completes
           _tryNavigateWithCurrentState();
         }
       }
@@ -61,25 +59,17 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _handleNavigation(AuthState state) {
-    // Only navigate when animation is completed
     if (!_animationCompleted) return;
-
-    // Skip initial state
     if (state is AuthInitial) return;
-
-    // Prevent multiple navigation calls
     if (_isNavigating || !mounted) return;
-    _isNavigating = true;
 
-    if (state is AuthAuthenticated) {
+    // Both authenticated and unauthenticated → go to MainScreen
+    // Guests can browse; auth-required features are guarded in MainScreen
+    if (state is AuthAuthenticated || state is AuthUnauthenticated) {
+      _isNavigating = true;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
-    } else if (state is AuthUnauthenticated) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
   }
@@ -97,11 +87,11 @@ class _SplashScreenState extends State<SplashScreen>
         _handleNavigation(state);
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: ColorsCustom.surface,
         body: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -109,30 +99,30 @@ class _SplashScreenState extends State<SplashScreen>
 
                   // Logo/Character
                   Image.asset(
-                    'assets/icons/body.png',
-                    width: 400,
-                    height: 400,
+                    'assets/icons/splash_tagline.png',
+                    width: 600,
+                    height: 600,
                     fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
 
                   // English Text
                   const TextCustom(
                     text: 'ALWAYS AT YOUR SERVICE',
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                    color: ColorsCustom.textPrimary,
                     textAlign: TextAlign.center,
                     letterSpacing: 1.2,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Arabic Text
                   const TextCustom(
                     text: 'دائماً في الخدمة',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: ColorsCustom.textPrimary,
                     textAlign: TextAlign.center,
                   ),
 
@@ -146,11 +136,14 @@ class _SplashScreenState extends State<SplashScreen>
                       builder: (context, child) {
                         return SizedBox(
                           width: 200,
-                          child: LinearProgressIndicator(
-                            value: _progressController.value,
-                            color: Colors.black,
-                            backgroundColor: const Color(0xFFE0E0E0),
-                            minHeight: 5,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: _progressController.value,
+                              color: ColorsCustom.primary,
+                              backgroundColor: ColorsCustom.border,
+                              minHeight: 5,
+                            ),
                           ),
                         );
                       },

@@ -1,5 +1,3 @@
-// lib/domain/bloc/profile/profile_event.dart
-
 part of 'profile_bloc.dart';
 
 abstract class ProfileEvent extends Equatable {

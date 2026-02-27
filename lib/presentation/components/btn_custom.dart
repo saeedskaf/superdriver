@@ -24,34 +24,32 @@ class ButtonCustom extends StatelessWidget {
     this.enabled = true,
     this.color,
     this.textColor,
-    this.height = 50,
+    this.height = 48,
     this.width,
     this.icon,
     this.isOutlined = false,
   });
 
-  // Primary button (filled with primary color)
   const ButtonCustom.primary({
     super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
     this.enabled = true,
-    this.height = 50,
+    this.height = 48,
     this.width,
     this.icon,
   }) : color = ColorsCustom.primary,
-       textColor = Colors.white,
+       textColor = ColorsCustom.textOnPrimary,
        isOutlined = false;
 
-  // Secondary button (outlined style)
   const ButtonCustom.secondary({
     super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
     this.enabled = true,
-    this.height = 50,
+    this.height = 48,
     this.width,
     this.icon,
   }) : color = null,
@@ -68,7 +66,11 @@ class ButtonCustom extends StatelessWidget {
 
     final Color buttonTextColor = isOutlined
         ? (textColor ?? ColorsCustom.primary)
-        : (textColor ?? Colors.white);
+        : (textColor ?? ColorsCustom.textOnPrimary);
+
+    final Color resolvedTextColor = isDisabled
+        ? ColorsCustom.textHint
+        : buttonTextColor;
 
     return SizedBox(
       height: height,
@@ -78,14 +80,14 @@ class ButtonCustom extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonColor,
           foregroundColor: buttonTextColor,
-          elevation: isOutlined ? 0 : 2,
-          shadowColor: ColorsCustom.primary.withOpacity(0.2),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             side: isOutlined
                 ? BorderSide(
                     color: isDisabled
-                        ? Colors.grey.shade300
+                        ? ColorsCustom.border
                         : (color ?? ColorsCustom.primary),
                     width: 1.5,
                   )
@@ -93,8 +95,8 @@ class ButtonCustom extends StatelessWidget {
           ),
           disabledBackgroundColor: isOutlined
               ? Colors.transparent
-              : Colors.grey.shade300,
-          disabledForegroundColor: Colors.grey.shade500,
+              : ColorsCustom.border,
+          disabledForegroundColor: ColorsCustom.textHint,
           padding: const EdgeInsets.symmetric(horizontal: 24),
         ),
         child: isLoading
@@ -103,9 +105,7 @@ class ButtonCustom extends StatelessWidget {
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDisabled ? Colors.grey.shade500 : buttonTextColor,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(resolvedTextColor),
                 ),
               )
             : icon != null
@@ -119,10 +119,8 @@ class ButtonCustom extends StatelessWidget {
                     child: TextCustom(
                       text: text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDisabled
-                          ? Colors.grey.shade500
-                          : buttonTextColor,
+                      fontWeight: FontWeight.w500,
+                      color: resolvedTextColor,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
@@ -132,8 +130,8 @@ class ButtonCustom extends StatelessWidget {
             : TextCustom(
                 text: text,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isDisabled ? Colors.grey.shade500 : buttonTextColor,
+                fontWeight: FontWeight.w500,
+                color: resolvedTextColor,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),

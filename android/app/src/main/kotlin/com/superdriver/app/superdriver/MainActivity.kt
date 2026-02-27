@@ -1,4 +1,4 @@
-package com.superdriver.app.superdriver
+package com.narj.superdriverapp
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -10,7 +10,6 @@ class TextCustom extends StatelessWidget {
   final TextOverflow overflow;
   final int? maxLines;
   final TextAlign textAlign;
-  final double? height;
   final TextDecoration? decoration;
   final double? letterSpacing;
 
@@ -19,11 +18,10 @@ class TextCustom extends StatelessWidget {
     required this.text,
     this.fontSize = 14,
     this.color = ColorsCustom.textPrimary,
-    this.fontWeight = FontWeight.normal,
+    this.fontWeight = FontWeight.w500,
     this.overflow = TextOverflow.visible,
     this.maxLines,
     this.textAlign = TextAlign.start,
-    this.height,
     this.decoration,
     this.letterSpacing,
   });
@@ -33,11 +31,10 @@ class TextCustom extends StatelessWidget {
     required this.text,
     this.fontSize = 24,
     this.color = ColorsCustom.textPrimary,
-    this.fontWeight = FontWeight.bold,
+    this.fontWeight = FontWeight.w700,
     this.overflow = TextOverflow.visible,
     this.maxLines,
     this.textAlign = TextAlign.start,
-    this.height,
     this.decoration,
     this.letterSpacing,
   });
@@ -51,7 +48,6 @@ class TextCustom extends StatelessWidget {
     this.overflow = TextOverflow.visible,
     this.maxLines,
     this.textAlign = TextAlign.start,
-    this.height,
     this.decoration,
     this.letterSpacing,
   });
@@ -61,11 +57,10 @@ class TextCustom extends StatelessWidget {
     required this.text,
     this.fontSize = 14,
     this.color = ColorsCustom.textPrimary,
-    this.fontWeight = FontWeight.normal,
+    this.fontWeight = FontWeight.w400,
     this.overflow = TextOverflow.visible,
     this.maxLines,
     this.textAlign = TextAlign.start,
-    this.height = 1.5,
     this.decoration,
     this.letterSpacing,
   });
@@ -74,15 +69,30 @@ class TextCustom extends StatelessWidget {
     super.key,
     required this.text,
     this.fontSize = 12,
-    this.color = ColorsCustom.textPrimary,
+    this.color = ColorsCustom.textSecondary,
     this.fontWeight = FontWeight.w400,
     this.overflow = TextOverflow.visible,
     this.maxLines,
     this.textAlign = TextAlign.start,
-    this.height,
     this.decoration,
     this.letterSpacing,
   });
+
+  TextStyle get _arabicStyle => GoogleFonts.notoSansArabic(
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+    decoration: decoration,
+    letterSpacing: letterSpacing ?? 0,
+  ).copyWith(leadingDistribution: TextLeadingDistribution.even);
+
+  TextStyle get _latinStyle => GoogleFonts.poppins(
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+    decoration: decoration,
+    letterSpacing: letterSpacing ?? 0,
+  ).copyWith(leadingDistribution: TextLeadingDistribution.even);
 
   @override
   Widget build(BuildContext context) {
@@ -94,23 +104,7 @@ class TextCustom extends StatelessWidget {
       maxLines: maxLines,
       textAlign: textAlign,
       textDirection: hasArabic ? TextDirection.rtl : TextDirection.ltr,
-      style: hasArabic
-          ? GoogleFonts.cairo(
-              fontSize: fontSize,
-              color: color,
-              fontWeight: fontWeight,
-              height: height,
-              decoration: decoration,
-              letterSpacing: letterSpacing,
-            )
-          : GoogleFonts.outfit(
-              fontSize: fontSize,
-              color: color,
-              fontWeight: fontWeight,
-              height: height,
-              decoration: decoration,
-              letterSpacing: letterSpacing ?? 0.5,
-            ),
+      style: hasArabic ? _arabicStyle : _latinStyle,
     );
   }
 }

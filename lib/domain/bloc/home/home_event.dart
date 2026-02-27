@@ -7,35 +7,50 @@ abstract class HomeEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Initial load / full reload
 class HomeLoadRequested extends HomeEvent {
-  const HomeLoadRequested();
-}
+  final double? lat;
+  final double? lng;
 
-class HomeRefreshRequested extends HomeEvent {
-  const HomeRefreshRequested();
-}
-
-class HomeNearbyRestaurantsRequested extends HomeEvent {
-  final double lat;
-  final double lng;
-
-  const HomeNearbyRestaurantsRequested({
-    required this.lat,
-    required this.lng,
-  });
+  const HomeLoadRequested({this.lat, this.lng});
 
   @override
   List<Object?> get props => [lat, lng];
 }
 
-class HomeRecommendedRestaurantsRequested extends HomeEvent {
-  const HomeRecommendedRestaurantsRequested();
+/// Pull-to-refresh (keeps old data on error)
+class HomeRefreshRequested extends HomeEvent {
+  final double? lat;
+  final double? lng;
+
+  const HomeRefreshRequested({this.lat, this.lng});
+
+  @override
+  List<Object?> get props => [lat, lng];
 }
 
-class HomeTrendingRequested extends HomeEvent {
-  const HomeTrendingRequested();
+/// Fetch nearby restaurants when location changes
+class HomeNearbyRequested extends HomeEvent {
+  final double lat;
+  final double lng;
+
+  const HomeNearbyRequested({required this.lat, required this.lng});
+
+  @override
+  List<Object?> get props => [lat, lng];
 }
 
-class HomeSearchSuggestionsRequested extends HomeEvent {
-  const HomeSearchSuggestionsRequested();
+/// Load next page of all restaurants
+class HomeLoadMoreRestaurants extends HomeEvent {
+  const HomeLoadMoreRestaurants();
+}
+
+/// User just logged in — fetch auth-only data
+class HomeUserLoggedIn extends HomeEvent {
+  const HomeUserLoggedIn();
+}
+
+/// User just logged out — clear auth-only data
+class HomeUserLoggedOut extends HomeEvent {
+  const HomeUserLoggedOut();
 }

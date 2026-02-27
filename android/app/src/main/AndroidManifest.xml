@@ -1,18 +1,62 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions Internet -->
+    <!-- Permissions: Internet -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Permissions: Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+    <!-- Permissions: Push Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- FIX: WAKE_LOCK needed by FCM to keep device awake for background processing -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!-- FIX: SCHEDULE_EXACT_ALARM needed by flutter_local_notifications on Android 12+ -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
+    <!-- Camera for chat images -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
     <application
-        android:label="superdriver"
+        android:label="SuperDriver"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- Google Maps API Key -->
         <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyDm4KPcAljeOZV1YF13VRzCZT3G4ahYlJw"/>
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDNbqZxczv6tpfokLYeM1WKaR54LOo1Mdw"/>
+
+        <!-- ═══════════════════════════════════════════════
+             FCM Configuration
+             ═══════════════════════════════════════════════ -->
+
+        <!-- FCM default notification channel.
+             MUST match the channel ID in push_notification_service.dart -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="superdriver_notifications" />
+
+        <!-- FCM default notification icon -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <!-- FCM default notification color.
+             IMPORTANT: Make sure res/values/colors.xml has:
+               <color name="notification_color">#FF6B35</color>
+             If the file doesn't exist, the app will CRASH on notification. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+
+        <!-- ═══════════════════════════════════════════════
+             Main Activity
+             ═══════════════════════════════════════════════ -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -21,35 +65,31 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
+            android:windowSoftInputMode="adjustResize"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true">
+
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-    </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    </application>
+
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+
 </manifest>

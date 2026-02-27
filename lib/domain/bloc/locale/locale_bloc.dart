@@ -1,5 +1,7 @@
 // lib/domain/bloc/locale/locale_bloc.dart
 
+import 'dart:ui';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +24,15 @@ class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
   ) async {
     final savedLocale = await secureStorage.getLocale();
     if (savedLocale != null) {
+      // User previously chose a language — use it
       emit(state.copyWith(locale: Locale(savedLocale)));
+    } else {
+      // First launch — use phone language
+      final phoneLanguage = PlatformDispatcher.instance.locale.languageCode;
+      final defaultLocale = phoneLanguage == 'en' ? 'en' : 'ar';
+      // Save it so next launch is consistent
+      await secureStorage.saveLocale(defaultLocale);
+      emit(state.copyWith(locale: Locale(defaultLocale)));
     }
   }
 

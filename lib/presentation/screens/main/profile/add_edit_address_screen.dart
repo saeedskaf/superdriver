@@ -1,8 +1,9 @@
-// lib/presentation/screens/main/profile/add_edit_address_screen.dart
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:superdriver/domain/bloc/address/address_bloc.dart';
@@ -10,10 +11,12 @@ import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/domain/models/location_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/btn_custom.dart';
 import 'package:superdriver/presentation/screens/main/profile/full_map_picker_screen.dart';
+import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class AddEditAddressScreen extends StatefulWidget {
-  final int? addressId; // null for add, not null for edit
+  final int? addressId;
 
   const AddEditAddressScreen({super.key, this.addressId});
 
@@ -37,13 +40,15 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   bool _isCurrent = false;
   bool _isLoadingLocations = true;
   bool _isLoadingAddress = false;
-  bool _isSubmitting = false; // Prevent double submission
+  bool _isSubmitting = false;
+  bool _addressDataPopulated = false;
 
-  // Map related
+  Address? _pendingAddressData;
+
   LatLng? _selectedLocation;
   GoogleMapController? _mapController;
+  String? _addressText;
 
-  // Default location (Syria - Homs)
   static const LatLng _defaultLocation = LatLng(34.7324, 36.7137);
 
   bool get isEditMode => widget.addressId != null;
@@ -52,16 +57,15 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   void initState() {
     super.initState();
     _loadGovernorates();
-    if (isEditMode) {
-      _loadAddressDetails();
-    }
   }
 
   void _loadGovernorates() {
+    setState(() => _isLoadingLocations = true);
     context.read<AddressBloc>().add(const GovernoratesRequested());
   }
 
   void _loadAddressDetails() {
+    if (!isEditMode) return;
     setState(() => _isLoadingAddress = true);
     context.read<AddressBloc>().add(
       AddressDetailRequested(id: widget.addressId!),
@@ -69,6 +73,14 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   }
 
   void _populateAddressData(Address address) {
+    if (_governorates.isEmpty) {
+      _pendingAddressData = address;
+      return;
+    }
+
+    if (_addressDataPopulated) return;
+    _addressDataPopulated = true;
+
     _titleController.text = address.title;
     _streetController.text = address.street;
     _buildingController.text = address.buildingNumber;
@@ -80,21 +92,20 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
 
     if (address.latitude != null && address.longitude != null) {
       _selectedLocation = LatLng(address.latitude!, address.longitude!);
+      _reverseGeocode(_selectedLocation!);
     }
 
-    // Find and set governorate
-    if (_governorates.isNotEmpty) {
+    try {
       _selectedGovernorate = _governorates.firstWhere(
         (g) => g.id == address.governorate,
-        orElse: () => _governorates.first,
       );
-      // Find and set area
       if (_selectedGovernorate != null) {
         _selectedArea = _selectedGovernorate!.areas.firstWhere(
           (a) => a.id == address.area,
-          orElse: () => _selectedGovernorate!.areas.first,
         );
       }
+    } catch (e) {
+      log('Could not find governorate/area: $e');
     }
 
     setState(() => _isLoadingAddress = false);
@@ -113,11 +124,37 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     super.dispose();
   }
 
+  Future<void> _reverseGeocode(LatLng location) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        location.latitude,
+        location.longitude,
+      );
+      if (placemarks.isNotEmpty && mounted) {
+        final p = placemarks.first;
+        final parts = <String>[
+          if (p.street != null && p.street!.isNotEmpty) p.street!,
+          if (p.subLocality != null && p.subLocality!.isNotEmpty)
+            p.subLocality!,
+          if (p.locality != null && p.locality!.isNotEmpty) p.locality!,
+          if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty)
+            p.administrativeArea!,
+        ];
+        setState(() {
+          _addressText = parts.isNotEmpty ? parts.join('، ') : null;
+        });
+      }
+    } catch (e) {
+      log('Reverse geocode failed: $e');
+    }
+  }
+
   Future<void> _getCurrentLocation() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showLocationError('يرجى تفعيل خدمة الموقع');
+        _showSnackBar(l10n.enableLocationService, isError: true);
         return;
       }
 
@@ -125,13 +162,13 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showLocationError('تم رفض إذن الموقع');
+          _showSnackBar(l10n.locationPermissionDenied, isError: true);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showLocationError('إذن الموقع مرفوض بشكل دائم');
+        _showSnackBar(l10n.locationPermissionPermanentlyDenied, isError: true);
         return;
       }
 
@@ -141,23 +178,35 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
 
       setState(() {
         _selectedLocation = LatLng(position.latitude, position.longitude);
+        _addressText = null;
       });
+
+      _reverseGeocode(_selectedLocation!);
 
       _mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(_selectedLocation!, 16),
       );
     } catch (e) {
-      _showLocationError('حدث خطأ في الحصول على الموقع');
+      if (mounted) {
+        _showSnackBar(l10n.locationError, isError: true);
+      }
     }
   }
 
-  void _showLocationError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+  void _showSnackBar(String message, {bool isError = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? ColorsCustom.error : ColorsCustom.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
-  /// Navigate to full screen map picker
   Future<void> _openFullMapPicker() async {
     final LatLng? result = await Navigator.push<LatLng>(
       context,
@@ -170,45 +219,28 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     if (result != null) {
       setState(() {
         _selectedLocation = result;
+        _addressText = null;
       });
-
-      // Animate the mini map to the new location
+      _reverseGeocode(result);
       _mapController?.animateCamera(CameraUpdate.newLatLngZoom(result, 16));
     }
   }
 
   void _saveAddress() {
-    // Prevent double submission
     if (_isSubmitting) return;
+    final l10n = AppLocalizations.of(context)!;
 
     if (_formKey.currentState!.validate()) {
-      final l10n = AppLocalizations.of(context)!;
-
       if (_selectedGovernorate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.pleaseSelectGovernorate),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnackBar(l10n.pleaseSelectGovernorate, isError: true);
         return;
       }
       if (_selectedArea == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.pleaseSelectArea),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnackBar(l10n.pleaseSelectArea, isError: true);
         return;
       }
       if (_selectedLocation == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.pleaseSelectLocation),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnackBar(l10n.pleaseSelectLocation, isError: true);
         return;
       }
 
@@ -282,74 +314,80 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: ColorsCustom.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: ColorsCustom.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: ColorsCustom.primarySoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: ColorsCustom.primary,
+              ),
+            ),
+          ),
         ),
         title: TextCustom(
           text: isEditMode ? l10n.editAddress : l10n.addNewAddress,
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+          color: ColorsCustom.textPrimary,
         ),
         centerTitle: true,
       ),
       body: BlocConsumer<AddressBloc, AddressState>(
-        // Only listen to relevant states to prevent duplicate handling
-        listenWhen: (previous, current) {
-          // Prevent listening to the same state type twice in a row
-          if (previous.runtimeType == current.runtimeType) {
-            return false;
-          }
-          // Only listen to states relevant to this screen
-          return current is GovernoratesLoaded ||
-              current is AddressDetailLoaded ||
-              current is AddressAddSuccess ||
-              current is AddressUpdateSuccess ||
-              current is AddressError;
-        },
         listener: (context, state) {
           if (state is GovernoratesLoaded) {
             setState(() {
               _governorates = state.governorates;
               _isLoadingLocations = false;
             });
-            // If editing, reload address details after governorates loaded
-            if (isEditMode && _isLoadingAddress) {
-              _loadAddressDetails();
+
+            if (isEditMode) {
+              if (_pendingAddressData != null) {
+                _populateAddressData(_pendingAddressData!);
+                _pendingAddressData = null;
+              } else if (!_addressDataPopulated && !_isLoadingAddress) {
+                _loadAddressDetails();
+              }
             }
           } else if (state is AddressDetailLoaded && isEditMode) {
-            _populateAddressData(state.address);
+            if (_governorates.isNotEmpty) {
+              _populateAddressData(state.address);
+            } else {
+              _pendingAddressData = state.address;
+              setState(() => _isLoadingAddress = false);
+            }
           } else if (state is AddressAddSuccess ||
               state is AddressUpdateSuccess) {
-            // Pop with result to tell list screen to refresh
             Navigator.pop(context, true);
           } else if (state is AddressError) {
             setState(() {
               _isLoadingLocations = false;
               _isLoadingAddress = false;
-              _isSubmitting = false; // Allow resubmission on error
+              _isSubmitting = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            _showSnackBar(state.message, isError: true);
           }
         },
         builder: (context, state) {
           final isLoading =
               state is AddressOperationInProgress || _isSubmitting;
 
-          if ((_isLoadingLocations && state is GovernoratesLoading) ||
-              _isLoadingAddress) {
+          if (_isLoadingLocations ||
+              (isEditMode && _isLoadingAddress && !_addressDataPopulated)) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFD32F2F)),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(ColorsCustom.primary),
+              ),
             );
           }
 
@@ -359,21 +397,21 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  // Map Section
+                  // Map
                   _buildMapSection(l10n),
                   const SizedBox(height: 16),
 
-                  // Form Fields
+                  // Form
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: ColorsCustom.surface,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: ColorsCustom.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title (optional)
                         _buildLabel(l10n.addressTitle),
                         _buildTextField(
                           controller: _titleController,
@@ -381,7 +419,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Governorate (required)
                         _buildLabel('${l10n.governorate} *'),
                         DropdownButtonFormField<Governorate>(
                           value: _selectedGovernorate,
@@ -404,7 +441,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Area (required)
                         _buildLabel('${l10n.area} *'),
                         DropdownButtonFormField<Area>(
                           value: _selectedArea,
@@ -425,14 +461,11 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                           onChanged: _selectedGovernorate == null
                               ? null
                               : (value) {
-                                  setState(() {
-                                    _selectedArea = value;
-                                  });
+                                  setState(() => _selectedArea = value);
                                 },
                         ),
                         const SizedBox(height: 16),
 
-                        // Street (required)
                         _buildLabel('${l10n.street} *'),
                         _buildTextField(
                           controller: _streetController,
@@ -446,7 +479,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Building Number & Floor (numbers only)
                         Row(
                           children: [
                             Expanded(
@@ -486,7 +518,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Apartment (number only)
                         _buildLabel(l10n.apartment),
                         _buildTextField(
                           controller: _apartmentController,
@@ -498,7 +529,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Landmark
                         _buildLabel(l10n.landmark),
                         _buildTextField(
                           controller: _landmarkController,
@@ -506,7 +536,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Additional Notes
                         _buildLabel(l10n.additionalNotes),
                         _buildTextField(
                           controller: _notesController,
@@ -515,63 +544,66 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Set as Current
-                        Row(
-                          children: [
-                            Switch(
-                              value: _isCurrent,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isCurrent = value;
-                                });
-                              },
-                              activeColor: const Color(0xFFD32F2F),
+                        // Set as current toggle
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: _isCurrent
+                                ? ColorsCustom.primarySoft
+                                : ColorsCustom.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _isCurrent
+                                  ? ColorsCustom.primary.withAlpha(77)
+                                  : ColorsCustom.border,
                             ),
-                            const SizedBox(width: 8),
-                            TextCustom(
-                              text: l10n.setAsDefaultAddress,
-                              fontSize: 14,
-                              color: Colors.black87,
-                            ),
-                          ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 20,
+                                color: ColorsCustom.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextCustom(
+                                  text: l10n.setAsDefaultAddress,
+                                  fontSize: 14,
+                                  color: ColorsCustom.textPrimary,
+                                ),
+                              ),
+                              Switch(
+                                value: _isCurrent,
+                                onChanged: (value) {
+                                  setState(() => _isCurrent = value);
+                                },
+                                activeColor: ColorsCustom.primary,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _saveAddress,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD32F2F),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                  // Save
+                  ButtonCustom.primary(
+                    text: isEditMode ? l10n.saveChanges : l10n.saveAddress,
+                    onPressed: isLoading ? null : _saveAddress,
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                ColorsCustom.textOnPrimary,
                               ),
-                            )
-                          : TextCustom(
-                              text: isEditMode
-                                  ? l10n.saveChanges
-                                  : l10n.saveAddress,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
                             ),
-                    ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -583,11 +615,14 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     );
   }
 
+  // ── Map Section ──
+
   Widget _buildMapSection(AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ColorsCustom.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorsCustom.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,31 +636,46 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                   text: '${l10n.selectLocationOnMap} *',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: ColorsCustom.textPrimary,
                 ),
                 Row(
                   children: [
-                    // Current location button
-                    IconButton(
-                      onPressed: _getCurrentLocation,
-                      icon: const Icon(
-                        Icons.my_location,
-                        color: Color(0xFFD32F2F),
+                    GestureDetector(
+                      onTap: _getCurrentLocation,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ColorsCustom.primarySoft,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.my_location_rounded,
+                          color: ColorsCustom.primary,
+                          size: 20,
+                        ),
                       ),
-                      tooltip: l10n.currentLocation,
                     ),
-                    // Open full screen map button
-                    IconButton(
-                      onPressed: _openFullMapPicker,
-                      icon: Icon(Icons.fullscreen, color: Colors.grey.shade700),
-                      tooltip: l10n.openFullMap,
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _openFullMapPicker,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ColorsCustom.background,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen_rounded,
+                          color: ColorsCustom.textSecondary,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          // Map (tap anywhere to open full screen)
           GestureDetector(
             onTap: _openFullMapPicker,
             child: ClipRRect(
@@ -638,7 +688,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                   SizedBox(
                     height: 200,
                     child: AbsorbPointer(
-                      // Prevent map interactions, tap opens full screen
                       absorbing: true,
                       child: GoogleMap(
                         initialCameraPosition: CameraPosition(
@@ -670,7 +719,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                       ),
                     ),
                   ),
-                  // Overlay hint to tap for full screen
                   Positioned(
                     bottom: 8,
                     left: 0,
@@ -682,23 +730,23 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: ColorsCustom.textPrimary.withAlpha(153),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.touch_app,
+                              Icons.touch_app_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: ColorsCustom.textOnPrimary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               l10n.tapToSelectLocation,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.white,
+                                color: ColorsCustom.textOnPrimary,
                               ),
                             ),
                           ],
@@ -710,23 +758,34 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
               ),
             ),
           ),
-          // Selected coordinates display
           if (_selectedLocation != null)
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Colors.green),
+                  const Icon(
+                    Icons.location_on_rounded,
+                    size: 16,
+                    color: ColorsCustom.success,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      '${l10n.latitude}: ${_selectedLocation!.latitude.toStringAsFixed(6)}, '
-                      '${l10n.longitude}: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    child: _addressText != null
+                        ? TextCustom(
+                            text: _addressText!,
+                            fontSize: 13,
+                            color: ColorsCustom.textPrimary,
+                          )
+                        : const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                ColorsCustom.textSecondary,
+                              ),
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -736,6 +795,8 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     );
   }
 
+  // ── Helpers ──
+
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -743,7 +804,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
         text: text,
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: Colors.black87,
+        color: ColorsCustom.textPrimary,
       ),
     );
   }
@@ -764,11 +825,20 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hint,
+        hintStyle: const TextStyle(color: ColorsCustom.textHint, fontSize: 14),
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: ColorsCustom.background,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: ColorsCustom.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ColorsCustom.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ColorsCustom.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -782,11 +852,20 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   InputDecoration _dropdownDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
+      hintStyle: const TextStyle(color: ColorsCustom.textHint, fontSize: 14),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: ColorsCustom.background,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: ColorsCustom.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: ColorsCustom.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: ColorsCustom.primary, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );

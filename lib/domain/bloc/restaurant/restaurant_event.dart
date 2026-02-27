@@ -7,7 +7,7 @@ abstract class RestaurantEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Load restaurants with optional filters
+/// Load restaurants with optional filters (handles category, search, and all filters)
 class RestaurantsLoadRequested extends RestaurantEvent {
   final RestaurantFilterParams? filters;
 
@@ -17,37 +17,33 @@ class RestaurantsLoadRequested extends RestaurantEvent {
   List<Object?> get props => [filters];
 }
 
-/// Refresh restaurants
+/// Refresh current restaurant list
 class RestaurantsRefreshRequested extends RestaurantEvent {
   const RestaurantsRefreshRequested();
 }
 
-/// Load restaurant details
+/// Load restaurant details by slug
 class RestaurantDetailsLoadRequested extends RestaurantEvent {
   final String slug;
+  final double? lat;
+  final double? lng;
 
-  const RestaurantDetailsLoadRequested({required this.slug});
+  const RestaurantDetailsLoadRequested({
+    required this.slug,
+    this.lat,
+    this.lng,
+  });
 
   @override
-  List<Object?> get props => [slug];
+  List<Object?> get props => [slug, lat, lng];
 }
 
-/// Load restaurant categories
+/// Load all categories
 class RestaurantCategoriesLoadRequested extends RestaurantEvent {
   const RestaurantCategoriesLoadRequested();
 }
 
-/// Load restaurants by category
-class RestaurantsByCategoryLoadRequested extends RestaurantEvent {
-  final String categorySlug;
-
-  const RestaurantsByCategoryLoadRequested({required this.categorySlug});
-
-  @override
-  List<Object?> get props => [categorySlug];
-}
-
-/// Load nearby restaurants
+/// Load nearby restaurants by location
 class NearbyRestaurantsLoadRequested extends RestaurantEvent {
   final double lat;
   final double lng;
@@ -63,17 +59,39 @@ class NearbyRestaurantsLoadRequested extends RestaurantEvent {
   List<Object?> get props => [lat, lng, radius];
 }
 
-/// Search restaurants
-class RestaurantsSearchRequested extends RestaurantEvent {
-  final String query;
+/// Update filters (merges with existing filters)
+class RestaurantsFilterChanged extends RestaurantEvent {
+  final int? categoryId;
+  final String? search;
+  final bool? hasDiscount;
+  final bool? isFeatured;
+  final bool? isCurrentlyOpen;
+  final String? ordering;
+  final String? restaurantType;
 
-  const RestaurantsSearchRequested({required this.query});
+  const RestaurantsFilterChanged({
+    this.categoryId,
+    this.search,
+    this.hasDiscount,
+    this.isFeatured,
+    this.isCurrentlyOpen,
+    this.ordering,
+    this.restaurantType,
+  });
 
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [
+    categoryId,
+    search,
+    hasDiscount,
+    isFeatured,
+    isCurrentlyOpen,
+    ordering,
+    restaurantType,
+  ];
 }
 
-/// Clear search results
-class RestaurantsSearchCleared extends RestaurantEvent {
-  const RestaurantsSearchCleared();
+/// Clear all filters
+class RestaurantsClearFilters extends RestaurantEvent {
+  const RestaurantsClearFilters();
 }

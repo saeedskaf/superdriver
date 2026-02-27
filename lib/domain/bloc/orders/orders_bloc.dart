@@ -41,10 +41,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       if (activeOrders.isEmpty && historyOrders.isEmpty) {
         emit(const OrdersEmpty());
       } else {
-        emit(OrdersLoaded(
-          activeOrders: activeOrders,
-          historyOrders: historyOrders,
-        ));
+        emit(
+          OrdersLoaded(
+            activeOrders: activeOrders,
+            historyOrders: historyOrders,
+          ),
+        );
       }
     } catch (e) {
       emit(OrdersError(e.toString().replaceAll('Exception: ', '')));
@@ -60,10 +62,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       final activeOrders = await orderServices.getActiveOrders();
       _activeOrders = activeOrders;
 
-      emit(OrdersLoaded(
-        activeOrders: activeOrders,
-        historyOrders: _historyOrders,
-      ));
+      emit(
+        OrdersLoaded(activeOrders: activeOrders, historyOrders: _historyOrders),
+      );
     } catch (e) {
       emit(OrdersError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -78,10 +79,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       final historyOrders = await orderServices.getOrdersHistory();
       _historyOrders = historyOrders;
 
-      emit(OrdersLoaded(
-        activeOrders: _activeOrders,
-        historyOrders: historyOrders,
-      ));
+      emit(
+        OrdersLoaded(activeOrders: _activeOrders, historyOrders: historyOrders),
+      );
     } catch (e) {
       emit(OrdersError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -107,14 +107,21 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     emit(const OrderCreating());
     try {
       final request = CreateOrderRequest(
+        cartId: event.cartId,
         deliveryAddressId: event.deliveryAddressId,
         paymentMethod: event.paymentMethod,
+        contactPhone: event.contactPhone,
+        scheduledDeliveryTime: event.scheduledDeliveryTime,
         notes: event.notes,
       );
 
       final order = await orderServices.createOrder(request);
+      print(
+        'OrdersBloc: Order created successfully - ${order.orderNumber}',
+      ); // Debug
       emit(OrderCreated(order: order));
     } catch (e) {
+      print('OrdersBloc: Order creation failed - $e'); // Debug
       emit(OrderCreateError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -126,8 +133,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     emit(const OrderPlacing());
     try {
       final order = await orderServices.placeOrder(event.orderId);
+      print(
+        'OrdersBloc: Order placed successfully - ${order.orderNumber}',
+      ); // Debug
       emit(OrderPlaced(order: order));
     } catch (e) {
+      print('OrdersBloc: Order placement failed - $e'); // Debug
       emit(OrderPlaceError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -184,10 +195,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       _activeOrders = activeOrders;
       _historyOrders = historyOrders;
 
-      emit(OrdersLoaded(
-        activeOrders: activeOrders,
-        historyOrders: historyOrders,
-      ));
+      emit(
+        OrdersLoaded(activeOrders: activeOrders, historyOrders: historyOrders),
+      );
     } catch (e) {
       emit(OrdersError(e.toString().replaceAll('Exception: ', '')));
     }

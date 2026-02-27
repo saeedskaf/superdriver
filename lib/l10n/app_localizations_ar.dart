@@ -12,7 +12,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appName => 'سوبر درايفر';
 
   @override
-  String get welcomeMessage => 'أهلاً بك! طلباتك صارت أوامرنا';
+  String get welcomeMessage => 'أهلاً بك! طلباتك أوامر';
 
   @override
   String get loading => 'جاري التحميل...';
@@ -90,10 +90,76 @@ class AppLocalizationsAr extends AppLocalizations {
   String get continueButton => 'متابعة';
 
   @override
+  String get or => 'أو';
+
+  @override
+  String get and => 'و';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get free => 'مجاني';
+
+  @override
   String get currency => 'ل.س';
 
   @override
   String get currencyCode => 'SYP';
+
+  @override
+  String get minuteShort => 'د';
+
+  @override
+  String get secondShort => 'ث';
+
+  @override
+  String get minute => 'دقيقة';
+
+  @override
+  String get minutes => 'د';
+
+  @override
+  String get hours => 'ساعات';
+
+  @override
+  String get days => 'أيام';
+
+  @override
+  String get seconds => 'ثانية';
+
+  @override
+  String get ago => 'منذ';
+
+  @override
+  String get yesterday => 'أمس';
+
+  @override
+  String get today => 'اليوم';
+
+  @override
+  String get tomorrow => 'غداً';
+
+  @override
+  String get am => 'صباحاً';
+
+  @override
+  String get pm => 'مساءً';
+
+  @override
+  String minutesAgo(int count) {
+    return 'منذ $count دقيقة';
+  }
+
+  @override
+  String hoursAgo(int count) {
+    return 'منذ $count ساعة';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return 'منذ $count أيام';
+  }
 
   @override
   String get login => 'تسجيل الدخول';
@@ -120,6 +186,104 @@ class AppLocalizationsAr extends AppLocalizations {
   String get changePassword => 'تغيير كلمة المرور';
 
   @override
+  String get createAccount => 'إنشاء حساب جديد';
+
+  @override
+  String get enterDetailsToStart => 'أدخل بياناتك للبدء';
+
+  @override
+  String get alreadyHaveAccount => 'لديك حساب؟';
+
+  @override
+  String get byCreatingAccount => 'بإنشاء الحساب، أنت توافق على';
+
+  @override
+  String get termsOfService => 'شروط الاستخدام';
+
+  @override
+  String get welcomeBack => 'مرحباً بعودتك';
+
+  @override
+  String get signInToContinue => 'يرجى تسجيل الدخول للمتابعة';
+
+  @override
+  String get dontHaveAccount => 'ليس لديك حساب؟';
+
+  @override
+  String get verifyPhone => 'التحقق من رقم الهاتف';
+
+  @override
+  String get enterOtpSent => 'أدخل رمز التحقق المرسل إلى';
+
+  @override
+  String get enterOtpSentTo => 'يرجى إدخال رمز التحقق المرسل إلى الرقم';
+
+  @override
+  String get changePhoneNumber => 'تغيير رقم الهاتف ؟';
+
+  @override
+  String get verificationSuccess => 'تم التحقق بنجاح! يرجى تسجيل الدخول';
+
+  @override
+  String get enterPhoneToReset => 'أدخل رقم هاتفك لإعادة تعيين كلمة المرور';
+
+  @override
+  String get sendCode => 'إرسال الرمز';
+
+  @override
+  String get rememberPassword => 'هل تتذكر كلمة المرور؟';
+
+  @override
+  String get resettingPassword => 'جارٍ إعادة تعيين كلمة المرور...';
+
+  @override
+  String get passwordResetSuccess =>
+      'تم إعادة تعيين كلمة المرور بنجاح! يرجى تسجيل الدخول باستخدام كلمة المرور الجديدة';
+
+  @override
+  String get loginRequired => 'تسجيل الدخول مطلوب';
+
+  @override
+  String get loginRequiredMessage => 'يجب تسجيل الدخول للوصول لهذه الميزة';
+
+  @override
+  String get continueBrowsing => 'متابعة التصفح';
+
+  @override
+  String get loginToViewCart => 'يجب تسجيل الدخول لعرض سلة المشتريات';
+
+  @override
+  String get loginToAddToCart =>
+      'يجب تسجيل الدخول أولاً لإضافة المنتجات إلى السلة';
+
+  @override
+  String get firstName => 'الاسم الأول';
+
+  @override
+  String get lastName => 'الاسم الأخير';
+
+  @override
+  String get phoneNumber => 'رقم الهاتف';
+
+  @override
+  String get password => 'كلمة المرور';
+
+  @override
+  String get confirmPassword => 'تأكيد كلمة المرور';
+
+  @override
+  String get verificationCode => 'رمز التحقق';
+
+  @override
+  String get newPassword => 'كلمة المرور الجديدة';
+
+  @override
+  String get currentPassword => 'كلمة المرور الحالية';
+
+  @override
+  String get fieldRequired => 'هذا الحقل مطلوب';
+
+  @override
   String get phoneRequired => 'رقم الهاتف مطلوب';
 
   @override
@@ -133,15 +297,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneOnlyNumbers => 'رقم الهاتف يجب أن يحتوي على أرقام فقط';
-
-  @override
-  String get firstName => 'الاسم الأول';
-
-  @override
-  String get lastName => 'الاسم الأخير';
-
-  @override
-  String get phoneNumber => 'رقم الهاتف';
 
   @override
   String get emailInvalid => 'البريد الإلكتروني غير صحيح';
@@ -163,21 +318,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get lastNameTooLong => 'اسم العائلة طويل جداً';
-
-  @override
-  String get password => 'كلمة المرور';
-
-  @override
-  String get confirmPassword => 'تأكيد كلمة المرور';
-
-  @override
-  String get verificationCode => 'رمز التحقق';
-
-  @override
-  String get newPassword => 'كلمة المرور الجديدة';
-
-  @override
-  String get currentPassword => 'كلمة المرور الحالية';
 
   @override
   String get passwordRequired => 'كلمة المرور مطلوبة';
@@ -237,331 +377,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get resendIn => 'إعادة الإرسال خلال';
 
   @override
-  String get seconds => 'ثانية';
-
-  @override
   String get verify => 'تحقق';
-
-  @override
-  String get fieldRequired => 'هذا الحقل مطلوب';
-
-  @override
-  String get cart => 'سلة التسوق';
-
-  @override
-  String get myCart => 'سلتي';
-
-  @override
-  String get emptyCart => 'السلة فارغة';
-
-  @override
-  String get emptyCartMessage => 'أضف بعض العناصر للبدء في التسوق';
-
-  @override
-  String get addToCart => 'أضف إلى السلة';
-
-  @override
-  String get removeFromCart => 'إزالة من السلة';
-
-  @override
-  String get clearCart => 'تفريغ السلة';
-
-  @override
-  String get clearAll => 'تفريغ الكل';
-
-  @override
-  String get clearCartConfirmation => 'هل أنت متأكد أنك تريد تفريغ السلة؟';
-
-  @override
-  String get cartCleared => 'تم إفراغ السلة';
-
-  @override
-  String get itemAdded => 'تمت إضافة المنتج';
-
-  @override
-  String get itemRemoved => 'تم حذف المنتج';
-
-  @override
-  String get quantity => 'الكمية';
-
-  @override
-  String get items => 'عناصر';
-
-  @override
-  String get browseRestaurants => 'تصفح المطاعم';
-
-  @override
-  String get addCoupon => 'إضافة كوبون';
-
-  @override
-  String get enterCouponCode => 'أدخل كود الكوبون';
-
-  @override
-  String get couponApplied => 'تم تطبيق الكوبون';
-
-  @override
-  String get couponRemoved => 'تم إزالة الكوبون';
-
-  @override
-  String get invalidCoupon => 'كوبون غير صالح';
-
-  @override
-  String get checkout => 'الدفع';
-
-  @override
-  String get subtotal => 'المجموع الفرعي';
-
-  @override
-  String get deliveryFee => 'رسوم التوصيل';
-
-  @override
-  String get discount => 'الخصم';
-
-  @override
-  String get total => 'الإجمالي';
-
-  @override
-  String get proceedToCheckout => 'متابعة للدفع';
-
-  @override
-  String get paymentMethod => 'طريقة الدفع';
-
-  @override
-  String get cashOnDelivery => 'الدفع عند الاستلام';
-
-  @override
-  String get payWhenReceive => 'ادفع عند استلام طلبك';
-
-  @override
-  String get creditCard => 'بطاقة ائتمان';
-
-  @override
-  String get wallet => 'المحفظة';
-
-  @override
-  String get deliveryAddress => 'عنوان التوصيل';
-
-  @override
-  String get selectAddress => 'اختر عنوان التوصيل';
-
-  @override
-  String get noAddressSelected => 'لم يتم اختيار عنوان';
-
-  @override
-  String get addNewAddress => 'إضافة عنوان جديد';
-
-  @override
-  String get defaultAddress => 'افتراضي';
-
-  @override
-  String get homeAddress => 'المنزل';
-
-  @override
-  String get workAddress => 'العمل';
-
-  @override
-  String get deliveryAddressRequired => 'عنوان التوصيل مطلوب';
-
-  @override
-  String get deliveryAddressTooShort => 'العنوان قصير جداً';
-
-  @override
-  String get deliveryAddressTooLong => 'العنوان طويل جداً';
-
-  @override
-  String get orders => 'الطلبات';
-
-  @override
-  String get myOrders => 'طلباتي';
-
-  @override
-  String get orderDetails => 'تفاصيل الطلب';
-
-  @override
-  String get orderNumber => 'رقم الطلب';
-
-  @override
-  String get orderDate => 'تاريخ الطلب';
-
-  @override
-  String get orderStatus => 'حالة الطلب';
-
-  @override
-  String get orderTotal => 'إجمالي الطلب';
-
-  @override
-  String get orderItems => 'عناصر الطلب';
-
-  @override
-  String get orderNotes => 'ملاحظات الطلب';
-
-  @override
-  String get addOrderNotes => 'أضف ملاحظات للطلب (اختياري)';
-
-  @override
-  String get orderSummary => 'ملخص الطلب';
-
-  @override
-  String get noOrders => 'لا توجد طلبات';
-
-  @override
-  String get noActiveOrders => 'لا توجد طلبات نشطة';
-
-  @override
-  String get noCompletedOrders => 'لا توجد طلبات مكتملة';
-
-  @override
-  String get noCancelledOrders => 'لا توجد طلبات ملغية';
-
-  @override
-  String get trackYourOrders => 'تتبع طلباتك';
-
-  @override
-  String get trackOrder => 'تتبع الطلب';
-
-  @override
-  String get cancelOrder => 'إلغاء الطلب';
-
-  @override
-  String get cancelOrderConfirmation => 'هل أنت متأكد من إلغاء هذا الطلب؟';
-
-  @override
-  String get cancellationReason => 'سبب الإلغاء';
-
-  @override
-  String get confirmCancel => 'تأكيد الإلغاء';
-
-  @override
-  String get orderCancelled => 'تم إلغاء الطلب';
-
-  @override
-  String get reorder => 'إعادة الطلب';
-
-  @override
-  String get orderReordered => 'تم إنشاء طلب جديد';
-
-  @override
-  String get confirmOrder => 'تأكيد الطلب';
-
-  @override
-  String get placeOrder => 'إرسال الطلب';
-
-  @override
-  String get orderPlacedSuccessfully => 'تم إرسال طلبك بنجاح!';
-
-  @override
-  String get orderConfirmedMessage => 'شكراً لك! سيتم تجهيز طلبك قريباً';
-
-  @override
-  String get backToHome => 'العودة للرئيسية';
-
-  @override
-  String get active => 'نشطة';
-
-  @override
-  String get completed => 'مكتملة';
-
-  @override
-  String get cancelled => 'ملغية';
-
-  @override
-  String get statusDraft => 'مسودة';
-
-  @override
-  String get statusPending => 'قيد الانتظار';
-
-  @override
-  String get statusAccepted => 'تم القبول';
-
-  @override
-  String get statusPreparing => 'قيد التحضير';
-
-  @override
-  String get statusReady => 'جاهز';
-
-  @override
-  String get statusPicked => 'تم الاستلام';
-
-  @override
-  String get statusDelivered => 'تم التوصيل';
-
-  @override
-  String get statusCompleted => 'مكتمل';
-
-  @override
-  String get statusCancelled => 'ملغي';
-
-  @override
-  String get ago => 'منذ';
-
-  @override
-  String get minutes => 'دقائق';
-
-  @override
-  String get hours => 'ساعات';
-
-  @override
-  String get days => 'أيام';
-
-  @override
-  String get yesterday => 'أمس';
-
-  @override
-  String get today => 'اليوم';
-
-  @override
-  String get driverInfo => 'معلومات السائق';
-
-  @override
-  String get driverName => 'اسم السائق';
-
-  @override
-  String get driverPhone => 'رقم السائق';
-
-  @override
-  String get contactDriver => 'التواصل مع السائق';
-
-  @override
-  String get callDriver => 'اتصل بالسائق';
-
-  @override
-  String get restaurant => 'المطعم';
-
-  @override
-  String get restaurantInfo => 'معلومات المطعم';
-
-  @override
-  String get profile => 'الملف الشخصي';
-
-  @override
-  String get settings => 'الإعدادات';
-
-  @override
-  String get language => 'اللغة';
-
-  @override
-  String get arabic => 'العربية';
-
-  @override
-  String get english => 'English';
-
-  @override
-  String get helpCenter => 'مركز المساعدة';
-
-  @override
-  String get termsAndConditions => 'الشروط والأحكام';
-
-  @override
-  String get privacyPolicy => 'سياسة الخصوصية';
-
-  @override
-  String get logoutConfirmation => 'هل أنت متأكد من تسجيل الخروج من حسابك؟';
 
   @override
   String get homeScreen => 'الرئيسية';
 
   @override
+  String get deliverTo => 'التوصيل إلى';
+
+  @override
   String get deliveryTo => 'التوصيل إلى';
+
+  @override
+  String get selectLocation => 'حدد موقعك';
 
   @override
   String get changeAddress => 'تغيير العنوان';
@@ -570,52 +398,112 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchPlaceholder => 'ابحث عن مطاعم أو أطباق...';
 
   @override
+  String get searchRestaurantsAndFood => 'ابحث عن مطاعم وأطعمة';
+
+  @override
+  String get searchHint => 'برغر، بيتزا، شاورما...';
+
+  @override
+  String get searchRestaurants => 'ابحث عن مطاعم...';
+
+  @override
+  String get searchResults => 'نتائج البحث';
+
+  @override
+  String get noResultsFound => 'لا توجد نتائج';
+
+  @override
+  String get tryDifferentKeywords => 'جرب كلمات بحث مختلفة';
+
+  @override
+  String get tryDifferentSearch => 'جرب كلمة بحث مختلفة';
+
+  @override
+  String get recentSearches => 'عمليات البحث الأخيرة';
+
+  @override
+  String get clearHistory => 'مسح السجل';
+
+  @override
+  String get searchFailed => 'فشل البحث، حاول مرة أخرى';
+
+  @override
+  String get results => 'نتيجة';
+
+  @override
+  String get searchInMenu => 'ابحث في القائمة...';
+
+  @override
+  String get noSearchResults => 'لا توجد نتائج بحث';
+
+  @override
+  String get noResultsFor => 'لا توجد نتائج لـ';
+
+  @override
   String get categories => 'التصنيفات';
 
   @override
   String get seeAll => 'عرض الكل';
 
   @override
-  String get featuredRestaurants => 'مطاعم مميزة';
+  String get featuredRestaurants => 'المطاعم المميزة';
 
   @override
-  String get popularRestaurants => 'الأكثر شعبية';
+  String get popularRestaurants => 'المطاعم الشائعة';
 
   @override
-  String get newRestaurants => 'مطاعم جديدة';
+  String get newRestaurants => 'مطاعم جديدة على سوبر درايفر';
 
   @override
-  String get discountRestaurants => 'عروض وخصومات';
+  String get discountRestaurants => 'العروض والخصومات';
 
   @override
-  String get nearbyRestaurants => 'بالقرب منك';
+  String get nearbyRestaurants => 'المطاعم القريبة';
 
   @override
-  String get recommendedForYou => 'موصى لك';
+  String get recommendedForYou => 'موصى به لك';
 
   @override
-  String get popularDishes => 'أطباق شائعة';
+  String get popularDishes => 'أطباق مشهورة';
 
   @override
-  String get trending => 'الرائج الآن';
+  String get popularProducts => 'الأطباق الشائعة';
+
+  @override
+  String get trending => 'الأكثر رواجاً';
+
+  @override
+  String get trendingNow => 'رائج الآن';
 
   @override
   String get deals => 'العروض';
 
   @override
-  String get open => 'مفتوح';
+  String get offer => 'عرض';
+
+  @override
+  String get seasonal => 'موسمي';
+
+  @override
+  String get newLabel => 'جديد';
+
+  @override
+  String get open => 'متاح';
 
   @override
   String get closed => 'مغلق';
 
   @override
-  String get minOrder => 'الحد الأدنى';
+  String get featured => 'مميز';
+
+  @override
+  String get freeDelivery => 'توصيل مجاني';
 
   @override
   String get deliveryTime => 'وقت التوصيل';
 
   @override
-  String get freeDelivery => 'توصيل مجاني';
+  String get minOrder => 'الحد الأدنى';
 
   @override
   String get reviews => 'تقييم';
@@ -630,11 +518,114 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noProducts => 'لا توجد منتجات';
 
   @override
+  String get orders => 'طلب';
+
+  @override
+  String get restaurant => 'مطعم';
+
+  @override
+  String get dish => 'طبق';
+
+  @override
+  String get items => 'عناصر';
+
+  @override
   String get locationPermission =>
       'نحتاج إذن الموقع للعثور على المطاعم القريبة';
 
   @override
   String get enableLocation => 'تفعيل الموقع';
+
+  @override
+  String get enableLocationService => 'يرجى تفعيل خدمة الموقع';
+
+  @override
+  String get locationPermissionDenied => 'تم رفض إذن الموقع';
+
+  @override
+  String get locationPermissionPermanentlyDenied =>
+      'إذن الموقع مرفوض بشكل دائم';
+
+  @override
+  String get locationServiceDisabled => 'يرجى تفعيل خدمة الموقع';
+
+  @override
+  String get locationServicesDisabled => 'خدمات الموقع معطلة. يرجى تفعيلها.';
+
+  @override
+  String get locationError => 'حدث خطأ في الحصول على الموقع';
+
+  @override
+  String get failedToGetLocation => 'فشل في الحصول على الموقع الحالي';
+
+  @override
+  String get deliveryLocation => 'موقع التوصيل';
+
+  @override
+  String get selectDeliveryAddress => 'أين نوصل طلبك؟';
+
+  @override
+  String get selectDeliveryLocation => 'اختر عنوان التوصيل';
+
+  @override
+  String get whereToDeliver => 'أين تريد التوصيل؟';
+
+  @override
+  String get currentLocation => 'الموقع الحالي';
+
+  @override
+  String get usingGPS => 'باستخدام GPS';
+
+  @override
+  String get useCurrentLocation => 'استخدم موقعي الحالي';
+
+  @override
+  String get detectMyLocation => 'تحديد موقعي تلقائياً';
+
+  @override
+  String get detectAutomatically => 'كشف تلقائي';
+
+  @override
+  String get detectYourLocation => 'سيتم تحديد موقعك عبر GPS';
+
+  @override
+  String get searchForLocation => 'ابحث عن موقع...';
+
+  @override
+  String get searchAddress => 'البحث عن عنوان';
+
+  @override
+  String get searchByStreetOrArea => 'ابحث بالشارع أو المنطقة';
+
+  @override
+  String get savedAddresses => 'العناوين المحفوظة';
+
+  @override
+  String get selectFromSaved => 'اختر من عناوينك المحفوظة';
+
+  @override
+  String get selectAddress => 'اختر العنوان';
+
+  @override
+  String get tapToSelectAddress => 'اضغط لاختيار عنوان التوصيل';
+
+  @override
+  String get addNew => 'إضافة جديد';
+
+  @override
+  String get noSavedAddresses => 'لا توجد عناوين محفوظة';
+
+  @override
+  String get addAddressForFasterDelivery => 'أضف عنواناً للتوصيل بشكل أسرع';
+
+  @override
+  String get addAddressForFasterCheckout => 'أضف عنواناً لتسريع عملية الطلب';
+
+  @override
+  String get defaultLabel => 'افتراضي';
+
+  @override
+  String get manage => 'إدارة';
 
   @override
   String get restaurants => 'المطاعم';
@@ -664,13 +655,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mostOrdered => 'الأكثر طلباً';
 
   @override
-  String get openNow => 'مفتوح الآن';
+  String get defaultSort => 'الافتراضي';
+
+  @override
+  String get minimumOrderSort => 'الحد الأدنى للطلب';
+
+  @override
+  String get newest => 'الأحدث';
+
+  @override
+  String get openNow => 'متاح الآن';
 
   @override
   String get hasOffers => 'عروض';
 
   @override
-  String get featured => 'مميز';
+  String get loadMore => 'عرض المزيد';
+
+  @override
+  String get noMoreRestaurants => 'لا يوجد مطاعم أخرى';
+
+  @override
+  String get tryChangingFilters => 'جرب تغيير الفلاتر أو البحث';
+
+  @override
+  String get clearFilters => 'إزالة الفلاتر';
 
   @override
   String get workingHours => 'ساعات العمل';
@@ -700,7 +709,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get closedDay => 'مغلق';
 
   @override
-  String get callRestaurant => 'اتصل بالمطعم';
+  String get callRestaurant => 'الاتصال بالمطعم';
 
   @override
   String get viewMenu => 'عرض القائمة';
@@ -715,320 +724,297 @@ class AppLocalizationsAr extends AppLocalizations {
   String get about => 'حول';
 
   @override
-  String get reviewsTitle => 'التقييمات';
+  String get restaurantInfo => 'معلومات المطعم';
 
   @override
-  String get writeReview => 'اكتب تقييم';
+  String get restaurantAddress => 'عنوان المطعم';
 
   @override
-  String get rateDriver => 'قيّم السائق';
+  String get discountOnAllProducts => 'خصم على جميع المنتجات';
 
   @override
-  String get rateRestaurant => 'قيّم المطعم';
+  String get delivery => 'التوصيل';
 
   @override
-  String get overallRating => 'التقييم العام';
+  String get minimum => 'الحد الأدنى';
 
   @override
-  String get deliverySpeed => 'سرعة التوصيل';
+  String get loadingMenu => 'جاري تحميل القائمة...';
 
   @override
-  String get professionalism => 'الاحترافية';
+  String get noMenuAvailable => 'لا توجد قائمة متاحة';
 
   @override
-  String get addComment => 'أضف تعليق (اختياري)';
+  String get noProductsInCategory => 'لا توجد منتجات في هذا التصنيف';
 
   @override
-  String get addTip => 'أضف بقشيش للسائق';
+  String get unavailable => 'غير متوفر';
 
   @override
-  String get tipAmount => 'مبلغ البقشيش';
+  String get cart => 'السلة';
 
   @override
-  String get submitReview => 'إرسال التقييم';
+  String get myCart => 'سلتي';
 
   @override
-  String get reviewSubmitted => 'شكراً لتقييمك!';
+  String get cartDetails => 'تفاصيل السلة';
 
   @override
-  String get thankYouForReview => 'تقييمك يساعدنا على التحسين';
+  String get emptyCart => 'سلة المشتريات فارغة';
 
   @override
-  String get skip => 'تخطي';
+  String get emptyCartMessage => 'ابدأ بإضافة المنتجات إلى سلتك';
 
   @override
-  String get searchResults => 'نتائج البحث';
+  String get addToCart => 'أضف إلى السلة';
 
   @override
-  String get noResultsFound => 'لم يتم العثور على نتائج';
+  String get removeFromCart => 'إزالة من السلة';
 
   @override
-  String get tryDifferentKeywords => 'جرب كلمات بحث مختلفة';
+  String get viewCart => 'عرض السلة';
 
   @override
-  String get recentSearches => 'عمليات البحث الأخيرة';
+  String get browseRestaurants => 'تصفح المطاعم';
 
   @override
-  String get clearHistory => 'مسح السجل';
+  String get noCart => 'لا توجد سلة';
 
   @override
-  String get homeTab => 'الرئيسية';
+  String get cartDeleted => 'تم حذف السلة';
 
   @override
-  String get ordersTab => 'الطلبات';
+  String get deleteCart => 'حذف السلة';
 
   @override
-  String get cartTab => 'السلة';
+  String get deleteCartConfirmation =>
+      'هل أنت متأكد من حذف هذه السلة؟ لا يمكن التراجع عن هذا الإجراء.';
 
   @override
-  String get chatTab => 'المحادثات';
+  String get cartExpired => 'انتهت صلاحية هذه السلة';
 
   @override
-  String get supportTab => 'الدعم';
+  String get remaining => 'متبقي';
 
   @override
-  String get profileTab => 'الملف الشخصي';
+  String get more => 'المزيد';
 
   @override
-  String get chat => 'المحادثات';
+  String get moreItems => 'عناصر أخرى';
 
   @override
-  String get support => 'الدعم';
+  String get otherItems => 'عناصر أخرى';
 
   @override
-  String get newOrder => 'طلب جديد';
+  String get moreOtherItems => 'عناصر أخرى';
 
   @override
-  String get liveChat => 'المحادثة المباشرة';
+  String get clearCart => 'إفراغ السلة';
 
   @override
-  String get chatWithSupport => 'تحدث مع فريق الدعم';
+  String get clearAll => 'إفراغ الكل';
 
   @override
-  String get supportTickets => 'تذاكر الدعم';
+  String get clearCartConfirmation =>
+      'هل أنت متأكد من إزالة جميع العناصر من سلتك؟';
 
   @override
-  String get reportIssues => 'الإبلاغ عن المشاكل التقنية';
+  String get cartCleared => 'تم إفراغ السلة';
 
   @override
-  String get orderDescription => 'وصف الطلب';
+  String get itemAdded => 'تمت إضافة المنتج';
 
   @override
-  String get orderDescriptionRequired => 'وصف الطلب مطلوب';
+  String get itemRemoved => 'تم إزالة العنصر من السلة';
 
   @override
-  String get orderDescriptionTooShort =>
-      'يرجى كتابة وصف أكثر تفصيلاً (10 أحرف على الأقل)';
+  String get itemUnavailable => 'العنصر غير متوفر';
 
   @override
-  String get orderDescriptionTooLong => 'الوصف طويل جداً (الحد الأقصى 500 حرف)';
+  String get quantity => 'الكمية';
 
   @override
-  String get notesOptional => 'ملاحظات (اختياري)';
+  String get quantityUpdated => 'تم تحديث الكمية';
 
   @override
-  String get notesTooLong => 'الملاحظات طويلة جداً (الحد الأقصى 500 حرف)';
+  String get addCoupon => 'إضافة كوبون';
 
   @override
-  String get orderCreated => 'تم إنشاء الطلب';
+  String get enterCouponCode => 'أدخل رمز الكوبون';
 
   @override
-  String get orderAccepted => 'تم القبول';
+  String get couponApplied => 'تم تطبيق الكوبون بنجاح';
 
   @override
-  String get orderPreparing => 'جاري التحضير';
+  String get couponRemoved => 'تم إزالة الكوبون';
 
   @override
-  String get orderAssigned => 'تم التعيين للسائق';
+  String get invalidCoupon => 'كوبون غير صالح';
 
   @override
-  String get driverOnWay => 'السائق في الطريق';
+  String get subtotal => 'المجموع الفرعي';
 
   @override
-  String get orderDelivered => 'تم التوصيل';
+  String get deliveryFee => 'رسوم التوصيل';
 
   @override
-  String get invoicesUploaded => 'تم رفع الفواتير';
+  String get discount => 'الخصم';
 
   @override
-  String get orderClosed => 'مغلق';
+  String get total => 'الإجمالي';
 
   @override
-  String get chatMessage => 'الرسالة';
+  String get continueToCheckout => 'متابعة الدفع';
 
   @override
-  String get chatMessageRequired => 'الرسالة لا يمكن أن تكون فارغة';
+  String get proceedToCheckout => 'متابعة للدفع';
 
   @override
-  String get chatMessageTooLong => 'الرسالة طويلة جداً';
+  String get checkout => 'إتمام الطلب';
 
   @override
-  String get ticketTitle => 'عنوان التذكرة';
+  String get orderSummary => 'ملخص الطلب';
 
   @override
-  String get ticketTitleRequired => 'عنوان التذكرة مطلوب';
+  String get paymentMethod => 'طريقة الدفع';
 
   @override
-  String get ticketTitleTooShort => 'العنوان قصير جداً';
+  String get deliveryAddress => 'عنوان التوصيل';
 
   @override
-  String get ticketTitleTooLong => 'العنوان طويل جداً';
+  String get orderNotes => 'ملاحظات الطلب';
 
   @override
-  String get ticketDescription => 'وصف المشكلة';
+  String get addOrderNotes => 'أضف ملاحظات خاصة (اختياري)';
 
   @override
-  String get ticketDescriptionRequired => 'وصف المشكلة مطلوب';
+  String get confirmOrder => 'تأكيد الطلب';
 
   @override
-  String get ticketDescriptionTooShort =>
-      'يرجى كتابة وصف أكثر تفصيلاً (20 حرف على الأقل)';
+  String get placeOrder => 'إرسال الطلب';
 
   @override
-  String get ticketDescriptionTooLong =>
-      'الوصف طويل جداً (الحد الأقصى 1000 حرف)';
+  String get orderPlacedSuccessfully => 'تم إرسال طلبك بنجاح!';
 
   @override
-  String get orderSubmittedSuccess => 'تم إرسال الطلب بنجاح';
+  String get orderConfirmedMessage => 'شكراً لك! سيتم تجهيز طلبك قريباً';
 
   @override
-  String get createAccount => 'إنشاء حساب جديد';
+  String get backToHome => 'العودة للرئيسية';
 
   @override
-  String get enterDetailsToStart => 'أدخل بياناتك للبدء';
+  String get cashOnDelivery => 'الدفع عند الاستلام';
 
   @override
-  String get alreadyHaveAccount => 'لديك حساب؟';
+  String get payWhenReceive => 'ادفع عند استلام طلبك';
 
   @override
-  String get byCreatingAccount => 'بإنشاء الحساب، أنت توافق على';
+  String get creditCard => 'بطاقة ائتمان';
 
   @override
-  String get termsOfService => 'شروط الاستخدام';
+  String get wallet => 'المحفظة';
 
   @override
-  String get and => 'و';
+  String get contactPhone => 'رقم الاتصال';
 
   @override
-  String get welcomeBack => 'مرحباً بعودتك';
+  String get contactNumber => 'رقم الاتصال';
 
   @override
-  String get signInToContinue => 'سجل دخولك للمتابعة';
+  String get phoneWillBeUsed => 'سيتم التواصل معك على هذا الرقم لهذا الطلب';
 
   @override
-  String get dontHaveAccount => 'ليس لديك حساب؟';
+  String get phoneContactMessage => 'سيتم التواصل معك على هذا الرقم لهذا الطلب';
 
   @override
-  String get verifyPhone => 'التحقق من رقم الهاتف';
+  String get enterPhone => 'أدخل رقم الهاتف';
 
   @override
-  String get enterOtpSent => 'أدخل رمز التحقق المرسل إلى';
+  String get invalidPhone => 'رقم الهاتف غير صحيح';
 
   @override
-  String get enterPhoneToReset => 'أدخل رقم هاتفك لإعادة تعيين كلمة المرور';
+  String get invalidPhoneNumber => 'رقم الهاتف غير صحيح';
 
   @override
-  String get sendCode => 'إرسال الرمز';
+  String get pleaseEnterPhone => 'الرجاء إدخال رقم الهاتف';
 
   @override
-  String get rememberPassword => 'هل تتذكر كلمة المرور؟';
+  String get immediateDelivery => 'توصيل فوري';
 
   @override
-  String get resettingPassword => 'جارٍ إعادة تعيين كلمة المرور...';
+  String get within30to45min => 'خلال 30-45 دقيقة';
 
   @override
-  String get passwordResetSuccess =>
-      'تم إعادة تعيين كلمة المرور بنجاح! يرجى تسجيل الدخول باستخدام كلمة المرور الجديدة';
+  String get within30To45Minutes => 'خلال 30-45 دقيقة';
 
   @override
-  String get defaultUserName => 'مستخدم';
+  String get scheduleDelivery => 'جدولة التوصيل';
 
   @override
-  String get defaultUserInitial => 'م';
+  String get chooseSpecificTime => 'اختر وقت محدد';
 
   @override
-  String get accountSection => 'الحساب';
+  String get selectDateAndTime => 'اختر التاريخ والوقت';
 
   @override
-  String get personalInfo => 'المعلومات الشخصية';
+  String get pleaseSelectDeliveryTime => 'الرجاء اختيار وقت التوصيل';
 
   @override
-  String get addresses => 'العناوين';
+  String get scheduledDelivery => 'توصيل مجدول';
 
   @override
-  String get preferencesSection => 'التفضيلات';
+  String get atTime => 'الساعة';
 
   @override
-  String get currentLanguage => 'العربية';
+  String get estimatedArrival => 'الوصول المتوقع';
 
   @override
-  String get selectLanguage => 'اختر اللغة';
-
-  @override
-  String get supportSection => 'الدعم';
-
-  @override
-  String get editProfile => 'تعديل الملف الشخصي';
-
-  @override
-  String get enterFirstName => 'أدخل الاسم الأول';
-
-  @override
-  String get enterLastName => 'أدخل الاسم الأخير';
-
-  @override
-  String get phoneNumberCannotBeChanged => 'لا يمكن تغيير رقم الهاتف';
-
-  @override
-  String get saveChanges => 'حفظ التغييرات';
-
-  @override
-  String get profileUpdatedSuccessfully => 'تم تحديث الملف الشخصي بنجاح';
-
-  @override
-  String get passwordChangedSuccessfully => 'تم تغيير كلمة المرور بنجاح';
-
-  @override
-  String get changePasswordTitle => 'تغيير كلمة المرور';
-
-  @override
-  String get useStrongPassword => 'تأكد من استخدام كلمة مرور قوية';
-
-  @override
-  String get enterCurrentPassword => 'أدخل كلمة المرور الحالية';
-
-  @override
-  String get enterNewPassword => 'أدخل كلمة المرور الجديدة';
-
-  @override
-  String get reEnterNewPassword => 'أعد إدخال كلمة المرور الجديدة';
-
-  @override
-  String get addressesTitle => 'العناوين';
-
-  @override
-  String get addAddress => 'إضافة عنوان';
+  String get noAddressSelected => 'لم يتم اختيار عنوان';
 
   @override
   String get noAddressesSaved => 'لا توجد عناوين محفوظة';
 
   @override
+  String get addAddressToCheckout => 'الرجاء إضافة عنوان توصيل للمتابعة';
+
+  @override
+  String get addAddress => 'إضافة عنوان';
+
+  @override
+  String get addNewAddress => 'إضافة عنوان جديد';
+
+  @override
   String get addNewAddressToStart => 'أضف عنواناً جديداً للبدء';
 
   @override
+  String get manageAddresses => 'إدارة العناوين';
+
+  @override
+  String get defaultAddress => 'افتراضي';
+
+  @override
   String get setAsDefault => 'تعيين كافتراضي';
+
+  @override
+  String get addressesTitle => 'العناوين';
+
+  @override
+  String get addressDeletedSuccessfully => 'تم حذف العنوان بنجاح';
+
+  @override
+  String get addressSetAsDefault => 'تم تعيين العنوان كافتراضي';
+
+  @override
+  String get addressAddedSuccessfully => 'تم إضافة العنوان بنجاح';
+
+  @override
+  String get addressUpdatedSuccessfully => 'تم تحديث العنوان بنجاح';
 
   @override
   String get deleteAddress => 'حذف العنوان';
 
   @override
   String get deleteAddressConfirmation => 'هل أنت متأكد من حذف هذا العنوان؟';
-
-  @override
-  String get addressDeletedSuccessfully => 'تم حذف العنوان بنجاح';
-
-  @override
-  String get addressSetAsDefault => 'تم تعيين العنوان كعنوان افتراضي';
 
   @override
   String get addressTitle => 'عنوان المكان';
@@ -1103,9 +1089,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveAddress => 'حفظ العنوان';
 
   @override
-  String get addressAddedSuccessfully => 'تم إضافة العنوان بنجاح';
-
-  @override
   String get addressDetails => 'تفاصيل العنوان';
 
   @override
@@ -1121,19 +1104,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editAddress => 'تعديل العنوان';
 
   @override
-  String get addressUpdatedSuccessfully => 'تم تحديث العنوان بنجاح';
-
-  @override
   String get addressSetAsDefaultSuccessfully => 'تم تعيين العنوان كافتراضي';
 
   @override
   String get errorLoadingAddress => 'حدث خطأ في تحميل العنوان';
 
   @override
-  String get selectLocationOnMap => 'حدد الموقع على الخريطة';
+  String get addressNotAvailable => 'عنوان التوصيل غير متوفر';
 
   @override
-  String get currentLocation => 'موقعي الحالي';
+  String get areaLabel => 'المنطقة';
+
+  @override
+  String get streetLabel => 'الشارع';
+
+  @override
+  String get buildingDetailsLabel => 'تفاصيل المبنى';
+
+  @override
+  String get landmarkLabel => 'علامة مميزة';
+
+  @override
+  String get selectLocationOnMap => 'حدد الموقع على الخريطة';
 
   @override
   String get latitude => 'خط العرض';
@@ -1145,15 +1137,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseSelectLocation => 'يرجى تحديد الموقع على الخريطة';
 
   @override
-  String get locationServiceDisabled => 'يرجى تفعيل خدمة الموقع';
-
-  @override
-  String get locationPermissionDenied => 'تم رفض إذن الموقع';
-
-  @override
-  String get locationError => 'حدث خطأ في الحصول على الموقع';
-
-  @override
   String get tapToSelectLocation => 'اضغط لتحديد الموقع';
 
   @override
@@ -1163,16 +1146,229 @@ class AppLocalizationsAr extends AppLocalizations {
   String get openFullMap => 'فتح الخريطة الكاملة';
 
   @override
-  String get driver => 'السائق';
+  String get deliveryAddressRequired => 'عنوان التوصيل مطلوب';
 
   @override
-  String get rateYourExperience => 'قيّم تجربتك مع السائق';
+  String get deliveryAddressTooShort => 'العنوان قصير جداً';
+
+  @override
+  String get deliveryAddressTooLong => 'العنوان طويل جداً';
+
+  @override
+  String get myOrders => 'طلباتي';
+
+  @override
+  String get orderDetails => 'تفاصيل الطلب';
+
+  @override
+  String get orderNumber => 'رقم الطلب';
+
+  @override
+  String get orderDate => 'تاريخ الطلب';
+
+  @override
+  String get orderStatus => 'حالة الطلب';
+
+  @override
+  String get orderTotal => 'إجمالي الطلب';
+
+  @override
+  String get orderItems => 'عناصر الطلب';
+
+  @override
+  String get noOrders => 'لا توجد طلبات';
+
+  @override
+  String get noActiveOrders => 'لا توجد طلبات نشطة';
+
+  @override
+  String get noCompletedOrders => 'لا توجد طلبات مكتملة';
+
+  @override
+  String get noCancelledOrders => 'لا توجد طلبات ملغية';
+
+  @override
+  String get noItems => 'لا توجد عناصر';
+
+  @override
+  String get trackYourOrders => 'تتبع طلباتك';
+
+  @override
+  String get trackOrder => 'تتبع الطلب';
+
+  @override
+  String get cancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get cancelOrderConfirmation => 'هل أنت متأكد من إلغاء هذا الطلب؟';
+
+  @override
+  String get cancellationReason => 'سبب الإلغاء';
+
+  @override
+  String get cancellationReasonTitle => 'سبب الإلغاء';
+
+  @override
+  String get confirmCancel => 'تأكيد الإلغاء';
+
+  @override
+  String get orderCancelled => 'تم إلغاء الطلب';
+
+  @override
+  String get cancelledByUser => 'تم الإلغاء من قبل المستخدم';
+
+  @override
+  String get reorder => 'إعادة طلب';
+
+  @override
+  String get reorderPrevious => 'اطلب مجدداً';
+
+  @override
+  String get orderReordered => 'تم إنشاء طلب جديد';
+
+  @override
+  String get currentStatus => 'الحالة الحالية';
+
+  @override
+  String get history => 'السجل';
+
+  @override
+  String get noOrderHistory => 'لا يوجد سجل طلبات';
+
+  @override
+  String get orderNotFound => 'لم يتم العثور على الطلب';
+
+  @override
+  String get active => 'نشطة';
+
+  @override
+  String get completed => 'مكتملة';
+
+  @override
+  String get cancelled => 'ملغية';
+
+  @override
+  String get statusDraft => 'مسودة';
+
+  @override
+  String get statusPending => 'قيد الانتظار';
+
+  @override
+  String get statusPlaced => 'تم الطلب';
+
+  @override
+  String get statusAccepted => 'تم القبول';
+
+  @override
+  String get statusPreparing => 'جاري التحضير';
+
+  @override
+  String get statusReady => 'جاهز';
+
+  @override
+  String get statusPicked => 'في الطريق إليك';
+
+  @override
+  String get statusDelivered => 'تم التوصيل';
+
+  @override
+  String get statusCompleted => 'مكتمل';
+
+  @override
+  String get statusCancelled => 'ملغي';
+
+  @override
+  String get orderCreated => 'تم إنشاء الطلب';
+
+  @override
+  String get orderAssigned => 'تم التعيين للبطل';
+
+  @override
+  String get driverOnWay => 'البطل في الطريق';
+
+  @override
+  String get orderDelivered => 'تم التوصيل';
+
+  @override
+  String get invoicesUploaded => 'تم رفع الفواتير';
+
+  @override
+  String get orderClosed => 'مغلق';
+
+  @override
+  String get orderSubmittedSuccess => 'تم إرسال الطلب بنجاح';
+
+  @override
+  String get driver => 'البطل';
+
+  @override
+  String get driverInfo => 'معلومات البطل';
+
+  @override
+  String get driverName => 'اسم البطل';
+
+  @override
+  String get driverPhone => 'رقم البطل';
+
+  @override
+  String get contactDriver => 'التواصل مع البطل';
+
+  @override
+  String get callDriver => 'اتصل بالبطل';
+
+  @override
+  String get reviewsTitle => 'التقييمات';
+
+  @override
+  String get writeReview => 'اكتب تقييم';
+
+  @override
+  String get rateDriver => 'قيّم البطل';
+
+  @override
+  String get rateRestaurant => 'قيّم المطعم';
+
+  @override
+  String get rateYourExperience => 'قيّم تجربتك مع البطل';
+
+  @override
+  String get overallRating => 'التقييم العام';
+
+  @override
+  String get deliverySpeed => 'سرعة التوصيل';
+
+  @override
+  String get professionalism => 'الاحترافية';
+
+  @override
+  String get addComment => 'أضف تعليق';
 
   @override
   String get optional => '(اختياري)';
 
   @override
   String get shareYourThoughts => 'شاركنا رأيك...';
+
+  @override
+  String get addTip => 'أضف بقشيش للبطل';
+
+  @override
+  String get tipAmount => 'مبلغ البقشيش';
+
+  @override
+  String get submitReview => 'إرسال التقييم';
+
+  @override
+  String get reviewSubmitted => 'شكراً لتقييمك!';
+
+  @override
+  String get thankYouForReview => 'تقييمك يساعدنا على التحسين';
+
+  @override
+  String get skip => 'تخطي';
+
+  @override
+  String get rate => 'تقييم';
 
   @override
   String get veryPoor => 'سيء جداً';
@@ -1190,26 +1386,406 @@ class AppLocalizationsAr extends AppLocalizations {
   String get excellent => 'ممتاز';
 
   @override
-  String get cartDeleted => 'تم حذف السلة';
+  String get profile => 'حسابي';
 
   @override
-  String get more => 'المزيد';
+  String get settings => 'الإعدادات';
 
   @override
-  String get cartExpired => 'انتهت صلاحية السلة';
+  String get language => 'اللغة';
 
   @override
-  String get remaining => 'متبقي';
+  String get arabic => 'العربية';
 
   @override
-  String get viewCart => 'عرض السلة';
+  String get english => 'English';
 
   @override
-  String get deleteCart => 'حذف السلة';
+  String get termsAndConditions => 'الشروط والأحكام';
 
   @override
-  String get deleteCartConfirmation => 'هل أنت متأكد من حذف هذه السلة؟';
+  String get privacyPolicy => 'سياسة الخصوصية';
 
   @override
-  String get cartDetails => 'تفاصيل السلة';
+  String get logoutConfirmation => 'هل أنت متأكد من تسجيل الخروج من حسابك؟';
+
+  @override
+  String get manageYourAccount => 'إدارة حسابك';
+
+  @override
+  String get defaultUserName => 'مستخدم';
+
+  @override
+  String get defaultUserInitial => 'م';
+
+  @override
+  String get accountSection => 'الحساب';
+
+  @override
+  String get personalInfo => 'المعلومات الشخصية';
+
+  @override
+  String get addresses => 'العناوين';
+
+  @override
+  String get preferencesSection => 'التفضيلات';
+
+  @override
+  String get currentLanguage => 'العربية';
+
+  @override
+  String get selectLanguage => 'اختر اللغة';
+
+  @override
+  String get supportSection => 'الدعم';
+
+  @override
+  String get editProfile => 'تعديل الملف الشخصي';
+
+  @override
+  String get enterFirstName => 'أدخل الاسم الأول';
+
+  @override
+  String get enterLastName => 'أدخل الاسم الأخير';
+
+  @override
+  String get phoneNumberCannotBeChanged => 'لا يمكن تغيير رقم الهاتف';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get profileUpdatedSuccessfully => 'تم تحديث الملف الشخصي بنجاح';
+
+  @override
+  String get changePasswordTitle => 'تغيير كلمة المرور';
+
+  @override
+  String get useStrongPassword => 'تأكد من استخدام كلمة مرور قوية';
+
+  @override
+  String get enterCurrentPassword => 'أدخل كلمة المرور الحالية';
+
+  @override
+  String get enterNewPassword => 'أدخل كلمة المرور الجديدة';
+
+  @override
+  String get reEnterNewPassword => 'أعد إدخال كلمة المرور الجديدة';
+
+  @override
+  String get passwordChangedSuccessfully => 'تم تغيير كلمة المرور بنجاح';
+
+  @override
+  String get homeTab => 'الرئيسية';
+
+  @override
+  String get ordersTab => 'الطلبات';
+
+  @override
+  String get cartTab => 'السلة';
+
+  @override
+  String get chatTab => 'المحادثات';
+
+  @override
+  String get supportTab => 'الدعم';
+
+  @override
+  String get profileTab => 'الملف الشخصي';
+
+  @override
+  String get chat => 'المحادثات';
+
+  @override
+  String get support => 'الدعم';
+
+  @override
+  String get newOrder => 'طلب جديد';
+
+  @override
+  String get liveChat => 'المحادثة المباشرة';
+
+  @override
+  String get chatWithSupport => 'تحدث مع فريق الدعم';
+
+  @override
+  String get supportTickets => 'تذاكر الدعم';
+
+  @override
+  String get reportIssues => 'الإبلاغ عن المشاكل التقنية';
+
+  @override
+  String get chatSupportTitle => 'فريق الدعم';
+
+  @override
+  String get chatOnline => 'متصل الآن';
+
+  @override
+  String get chatHint => 'اكتب رسالتك...';
+
+  @override
+  String get chatCamera => 'الكاميرا';
+
+  @override
+  String get chatGallery => 'المعرض';
+
+  @override
+  String get chatToday => 'اليوم';
+
+  @override
+  String get chatYesterday => 'أمس';
+
+  @override
+  String get chatEmptyTitle => 'ابدأ محادثة جديدة';
+
+  @override
+  String get chatEmptySubtitle =>
+      'أرسل لنا رسالة وسنقوم بالرد عليك في أقرب وقت. يمكنك أيضاً إنشاء طلب مخصص أو الاستفسار عن أي شيء.';
+
+  @override
+  String get chatLoginRequired => 'سجّل الدخول للمحادثة';
+
+  @override
+  String get chatLoginSubtitle => 'يجب تسجيل الدخول للتواصل مع فريق الدعم';
+
+  @override
+  String get chatSend => 'إرسال';
+
+  @override
+  String get chatImageSendError => 'فشل في إرسال الصورة';
+
+  @override
+  String get chatMessage => 'الرسالة';
+
+  @override
+  String get chatMessageRequired => 'الرسالة لا يمكن أن تكون فارغة';
+
+  @override
+  String get chatMessageTooLong => 'الرسالة طويلة جداً';
+
+  @override
+  String get orderDescription => 'وصف الطلب';
+
+  @override
+  String get orderDescriptionRequired => 'وصف الطلب مطلوب';
+
+  @override
+  String get orderDescriptionTooShort =>
+      'يرجى كتابة وصف أكثر تفصيلاً (10 أحرف على الأقل)';
+
+  @override
+  String get orderDescriptionTooLong => 'الوصف طويل جداً (الحد الأقصى 500 حرف)';
+
+  @override
+  String get notesOptional => 'ملاحظات (اختياري)';
+
+  @override
+  String get notesTooLong => 'الملاحظات طويلة جداً (الحد الأقصى 500 حرف)';
+
+  @override
+  String get ticketTitle => 'عنوان التذكرة';
+
+  @override
+  String get ticketTitleRequired => 'عنوان التذكرة مطلوب';
+
+  @override
+  String get ticketTitleTooShort => 'العنوان قصير جداً';
+
+  @override
+  String get ticketTitleTooLong => 'العنوان طويل جداً';
+
+  @override
+  String get ticketDescription => 'وصف المشكلة';
+
+  @override
+  String get ticketDescriptionRequired => 'وصف المشكلة مطلوب';
+
+  @override
+  String get ticketDescriptionTooShort =>
+      'يرجى كتابة وصف أكثر تفصيلاً (20 حرف على الأقل)';
+
+  @override
+  String get ticketDescriptionTooLong =>
+      'الوصف طويل جداً (الحد الأقصى 1000 حرف)';
+
+  @override
+  String get helpCenter => 'مركز الدعم';
+
+  @override
+  String get helpHeaderTitle => 'كيف يمكننا خدمتك؟';
+
+  @override
+  String get helpHeaderSubtitle =>
+      'ابحث عن إجابات للأسئلة الشائعة أو تواصل معنا مباشرة';
+
+  @override
+  String get frequentlyAskedQuestions => 'الأسئلة المتكررة';
+
+  @override
+  String get helpOrdersTitle => 'الطلبات';
+
+  @override
+  String get helpQ1 => 'كيف يمكنني إنشاء طلب جديد؟';
+
+  @override
+  String get helpA1 =>
+      'اختر مطعمك المفضل من الصفحة الرئيسية، ثم تصفح القائمة وأضف المنتجات إلى سلة التسوق. بعد الانتهاء، اضغط على السلة لمراجعة الطلب وإتمام عملية الشراء.';
+
+  @override
+  String get helpQ1_1 => 'ما هي ميزة \"شُبّيك لُبّيك\" وكيف أستخدمها؟';
+
+  @override
+  String get helpA1_1 =>
+      'تتيح لك ميزة \"شُبّيك لُبّيك\" طلب أي منتج مباشرة عبر المحادثة دون الحاجة لتصفح القوائم. اضغط على أيقونة الشعار في منتصف الشريط السفلي، ثم اكتب اسم المتجر الذي ترغب بالطلب منه، أو اختر المنتج الذي تريده فقط، أو أرسل صورة لطلباتك كما هي، وسنتولى تأكيد الطلب وتنفيذه فوراً بكل سهولة.';
+
+  @override
+  String get helpQ2 => 'كيف أستطيع إلغاء طلبي؟';
+
+  @override
+  String get helpA2 =>
+      'يمكنك إلغاء الطلب من صفحة تفاصيل الطلب قبل أن يبدأ المطعم في تحضيره. إذا تم بدء التحضير أو واجهت مشكلة، يمكنك التواصل مع فريق الدعم عبر الشات من خلال الضغط على اللوغو في منتصف شريط التنقل السفلي.';
+
+  @override
+  String get helpQ3 => 'كيف يمكنني تتبع حالة طلبي؟';
+
+  @override
+  String get helpA3 =>
+      'توجه إلى صفحة \"طلباتي\" لمتابعة حالة طلبك. ستصلك إشعارات عند كل تحديث جديد.';
+
+  @override
+  String get helpChatTitle => 'الشات والدعم';
+
+  @override
+  String get helpQ10 => 'كيف يمكنني التواصل مع فريق الدعم؟';
+
+  @override
+  String get helpA10 =>
+      'اضغط على اللوغو في منتصف شريط التنقل السفلي لفتح شاشة \"شُبّيك لُبّيك\"، حيث يمكنك التحدث مباشرة مع فريق الدعم لأي استفسار أو مشكلة.';
+
+  @override
+  String get helpQ11 => 'هل يمكنني إنشاء طلب مخصص عبر الشات؟';
+
+  @override
+  String get helpA11 =>
+      'نعم! في حال لم تجد المنتج الذي تبحث عنه داخل التطبيق، يمكنك التواصل معنا عبر ميزة \"شُبّيك لُبّيك\" لإنشاء طلب مخصص. نوفر مختلف المنتجات الغذائية، والمستلزمات الصحية والدوائية، والاحتياجات المنزلية وغيرها.';
+
+  @override
+  String get helpQ12 => 'كيف يتم تحديد أسعار الطلبات المخصصة؟';
+
+  @override
+  String get helpA12 =>
+      'عند طلبك عبر ميزة \"شُبّيك لُبّيك\"، سيقوم البطل بتسليمك فاتورة الشراء عند وصول الطلب. نعتمد هذه الآلية لضمان الشفافية الكاملة، ولتكون الفاتورة مرجعاً رسمياً لك في حال رغبت بتقديم أي استفسار أو شكوى لاحقاً.';
+
+  @override
+  String get helpQ13 => 'ماذا أفعل إذا واجهت مشكلة في طلبي؟';
+
+  @override
+  String get helpA13 =>
+      'افتح شاشة \"شُبّيك لُبّيك\" عبر الضغط على اللوغو في منتصف شريط التنقل، واذكر تفاصيل المشكلة. فريق الدعم سيعمل على حلها في أسرع وقت ممكن.';
+
+  @override
+  String get helpDeliveryTitle => 'التوصيل';
+
+  @override
+  String get helpQ4 => 'ما هي مناطق التوصيل المتوفرة؟';
+
+  @override
+  String get helpA4 =>
+      'نقدم خدمة التوصيل في جميع المناطق الظاهرة داخل التطبيق. يتم احتساب رسوم التوصيل ووقت الوصول المتوقع بناءً على المسافة بين موقعك والمطعم.';
+
+  @override
+  String get helpQ5 => 'كم يستغرق وقت التوصيل عادةً؟';
+
+  @override
+  String get helpA5 =>
+      'مدة التوصيل تختلف حسب المطعم والمسافة. يمكنك الاطلاع على الوقت المتوقع في صفحة المطعم قبل تأكيد الطلب.';
+
+  @override
+  String get helpPaymentTitle => 'الدفع';
+
+  @override
+  String get helpQ6 => 'ما طرق الدفع المتاحة حالياً؟';
+
+  @override
+  String get helpA6 =>
+      'يتوفر حالياً الدفع عند الاستلام (نقداً). سيتم إضافة وسائل دفع إلكترونية قريباً.';
+
+  @override
+  String get helpQ7 => 'هل يوجد حد أدنى للطلب؟';
+
+  @override
+  String get helpA7 =>
+      'نعم، لكل مطعم حد أدنى موضح في صفحته. لا يمكن إتمام الطلب إذا كان المبلغ أقل من الحد الأدنى.';
+
+  @override
+  String get helpAccountTitle => 'الحساب';
+
+  @override
+  String get helpQ8 => 'كيف يمكنني تعديل معلومات حسابي؟';
+
+  @override
+  String get helpA8 =>
+      'انتقل إلى صفحة الحساب واضغط على \"تعديل الملف الشخصي\" لتحديث بياناتك. يمكنك أيضاً تغيير كلمة المرور من نفس القسم. لا يمكن تعديل رقم الهاتف لأنه مرتبط بالحساب.';
+
+  @override
+  String get helpQ9 => 'كيف أضيف أو أعدّل عنوان التوصيل؟';
+
+  @override
+  String get helpA9 =>
+      'من صفحة الحساب، اضغط على \"عناويني\" لإدارة عناوين التوصيل. يمكنك إضافة عنوان جديد، تعديل عنوان موجود، أو تحديد عنوان افتراضي.';
+
+  @override
+  String get contactUsTitle => 'تواصل معنا';
+
+  @override
+  String get contactUsSubtitle => 'هل لديك استفسار أو اقتراح؟ نحن هنا لمساعدتك';
+
+  @override
+  String get sendEmail => 'إرسال رسالة بريد إلكتروني';
+
+  @override
+  String get emailCopied => 'تم نسخ البريد الإلكتروني بنجاح';
+
+  @override
+  String get whatsapp => 'واتساب';
+
+  @override
+  String get call => 'اتصال';
+
+  @override
+  String get phoneCopied => 'تم نسخ رقم الهاتف';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get markAllAsRead => 'تعيين الكل كمقروء';
+
+  @override
+  String get noNotifications => 'لا توجد إشعارات';
+
+  @override
+  String get noNotificationsMessage => 'ستظهر إشعارات طلباتك وعروضك هنا';
+
+  @override
+  String get pushNotifications => 'الإشعارات';
+
+  @override
+  String get deleteAccount => 'حذف الحساب';
+
+  @override
+  String get deleteAccountDescription =>
+      'سيتم إلغاء تفعيل حسابك وحذف جميع بياناتك. هذا الإجراء لا يمكن التراجع عنه.';
+
+  @override
+  String get deleteAccountPasswordHint => 'كلمة المرور';
+
+  @override
+  String get deleteAccountPasswordRequired => 'يرجى إدخال كلمة المرور';
+
+  @override
+  String get deleteAccountReasonHint => 'سبب الحذف (اختياري)';
+
+  @override
+  String get deleteAccountConfirm => 'حذف الحساب نهائياً';
 }

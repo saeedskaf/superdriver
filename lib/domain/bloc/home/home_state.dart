@@ -17,38 +17,33 @@ class HomeLoading extends HomeState {
 
 class HomeLoaded extends HomeState {
   final HomeData homeData;
-  final List<Restaurant>? nearbyRestaurants;
-  final List<Restaurant>? recommendedRestaurants;
-  final TrendingData? trendingData;
+  final List<RestaurantListItem>? recommendedRestaurants;
+  final List<RestaurantListItem>? nearbyRestaurants;
+  final List<RestaurantListItem> allRestaurants;
+  final bool isAuthenticated;
+  final bool hasMoreRestaurants;
+  final bool isLoadingMore;
 
   const HomeLoaded({
     required this.homeData,
-    this.nearbyRestaurants,
     this.recommendedRestaurants,
-    this.trendingData,
+    this.nearbyRestaurants,
+    required this.allRestaurants,
+    required this.isAuthenticated,
+    this.hasMoreRestaurants = true,
+    this.isLoadingMore = false,
   });
-
-  HomeLoaded copyWith({
-    HomeData? homeData,
-    List<Restaurant>? nearbyRestaurants,
-    List<Restaurant>? recommendedRestaurants,
-    TrendingData? trendingData,
-  }) {
-    return HomeLoaded(
-      homeData: homeData ?? this.homeData,
-      nearbyRestaurants: nearbyRestaurants ?? this.nearbyRestaurants,
-      recommendedRestaurants: recommendedRestaurants ?? this.recommendedRestaurants,
-      trendingData: trendingData ?? this.trendingData,
-    );
-  }
 
   @override
   List<Object?> get props => [
-        homeData,
-        nearbyRestaurants,
-        recommendedRestaurants,
-        trendingData,
-      ];
+    homeData,
+    recommendedRestaurants,
+    nearbyRestaurants,
+    allRestaurants,
+    isAuthenticated,
+    hasMoreRestaurants,
+    isLoadingMore,
+  ];
 }
 
 class HomeError extends HomeState {
@@ -58,39 +53,4 @@ class HomeError extends HomeState {
 
   @override
   List<Object?> get props => [message];
-}
-
-class HomeNearbyLoading extends HomeState {
-  final HomeData homeData;
-
-  const HomeNearbyLoading({required this.homeData});
-
-  @override
-  List<Object?> get props => [homeData];
-}
-
-class HomeNearbyLoaded extends HomeState {
-  final HomeData homeData;
-  final List<Restaurant> nearbyRestaurants;
-
-  const HomeNearbyLoaded({
-    required this.homeData,
-    required this.nearbyRestaurants,
-  });
-
-  @override
-  List<Object?> get props => [homeData, nearbyRestaurants];
-}
-
-class HomeNearbyError extends HomeState {
-  final HomeData homeData;
-  final String message;
-
-  const HomeNearbyError({
-    required this.homeData,
-    required this.message,
-  });
-
-  @override
-  List<Object?> get props => [homeData, message];
 }

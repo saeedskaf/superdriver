@@ -1,8 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:superdriver/data/env/environment.dart';
+import 'package:superdriver/data/local_secure/secure_storage.dart';
 
 class AuthServices {
+  static const Duration _timeout = Duration(seconds: 30);
+
   String _formatPhoneNumber(String phone) {
     String cleaned = phone.replaceAll(RegExp(r'[^\d]'), '');
     if (cleaned.startsWith('963')) {
@@ -13,6 +18,10 @@ class AuthServices {
     }
     return cleaned;
   }
+
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
 
   String _extractErrorMessage(Map<String, dynamic> responseBody) {
     if (responseBody['errors'] != null) {
@@ -25,7 +34,35 @@ class AuthServices {
     if (responseBody['message'] != null) {
       return responseBody['message'].toString();
     }
-    return 'حدث خطأ غير متوقع';
+    return responseBody['error']?.toString() ?? 'Unexpected error occurred';
+  }
+
+  Future<Map<String, dynamic>> _postRequest({
+    required String url,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await http
+          .post(Uri.parse(url), headers: _headers, body: jsonEncode(body))
+          .timeout(_timeout);
+
+      final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
+      debugPrint('[$url] ${response.statusCode}: $responseBody');
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          responseBody['success'] == true) {
+        return responseBody;
+      } else {
+        throw Exception(_extractErrorMessage(responseBody));
+      }
+    } on SocketException {
+      throw Exception('No internet connection');
+    } on http.ClientException {
+      throw Exception('Connection failed');
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
   }
 
   Future<Map<String, dynamic>> register({
@@ -35,50 +72,23 @@ class AuthServices {
     required String password,
     required String confirmPassword,
   }) async {
-    final uri = Uri.parse(Environment.registerEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({
-        "first_name": firstName,
-        "last_name": lastName,
-        "phone_number": formattedPhone,
-        "password": password,
-        "confirm_password": confirmPassword,
-      }),
+    return _postRequest(
+      url: Environment.registerEndpoint,
+      body: {
+        'first_name': firstName,
+        'last_name': lastName,
+        'phone_number': _formatPhoneNumber(phone),
+        'password': password,
+        'confirm_password': confirmPassword,
+      },
     );
-
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
-
-    if (response.statusCode == 201 && responseBody['success'] == true) {
-      return responseBody;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
-    }
   }
 
-  // LOGIN - Just return response, don't save tokens
   Future<Map<String, dynamic>> login(String phone, String password) async {
-    final uri = Uri.parse(Environment.loginEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({"phone_number": formattedPhone, "password": password}),
+    return _postRequest(
+      url: Environment.loginEndpoint,
+      body: {'phone_number': _formatPhoneNumber(phone), 'password': password},
     );
-
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
-
-    if (response.statusCode == 200 && responseBody['success'] == true) {
-      return responseBody;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
-    }
   }
 
   Future<Map<String, dynamic>> verifyOtp({
@@ -86,70 +96,31 @@ class AuthServices {
     required String otpCode,
     required String otpType,
   }) async {
-    final uri = Uri.parse(Environment.verifyOtpEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({
-        "phone_number": formattedPhone,
-        "otp_code": otpCode,
-        "otp_type": otpType,
-      }),
+    return _postRequest(
+      url: Environment.verifyOtpEndpoint,
+      body: {
+        'phone_number': _formatPhoneNumber(phone),
+        'otp_code': otpCode,
+        'otp_type': otpType,
+      },
     );
-
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
-
-    if (response.statusCode == 200 && responseBody['success'] == true) {
-      return responseBody;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
-    }
   }
 
   Future<void> resendOtp({
     required String phone,
     required String otpType,
   }) async {
-    final uri = Uri.parse(Environment.resendOtpEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({"phone_number": formattedPhone, "otp_type": otpType}),
+    await _postRequest(
+      url: Environment.resendOtpEndpoint,
+      body: {'phone_number': _formatPhoneNumber(phone), 'otp_type': otpType},
     );
-
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
-
-    if (response.statusCode == 200 && responseBody['success'] == true) {
-      return;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
-    }
   }
 
   Future<void> forgotPassword({required String phone}) async {
-    final uri = Uri.parse(Environment.forgotPasswordEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({"phone_number": formattedPhone}),
+    await _postRequest(
+      url: Environment.forgotPasswordEndpoint,
+      body: {'phone_number': _formatPhoneNumber(phone)},
     );
-
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
-
-    if (response.statusCode == 200 && responseBody['success'] == true) {
-      return;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
-    }
   }
 
   Future<void> resetPassword({
@@ -158,27 +129,64 @@ class AuthServices {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final uri = Uri.parse(Environment.resetPasswordEndpoint);
-    final formattedPhone = _formatPhoneNumber(phone);
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({
-        "phone_number": formattedPhone,
-        "otp_code": otpCode,
-        "new_password": newPassword,
-        "confirm_password": confirmPassword,
-      }),
+    await _postRequest(
+      url: Environment.resetPasswordEndpoint,
+      body: {
+        'phone_number': _formatPhoneNumber(phone),
+        'otp_code': otpCode,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
+      },
     );
+  }
 
-    final responseBody = jsonDecode(response.body);
-    print(responseBody);
+  /// DELETE account — POST /api/accounts/delete-account/
+  /// Requires Bearer token + password confirmation.
+  Future<void> deleteAccount({required String password, String? reason}) async {
+    try {
+      final token = await secureStorage.getAccessToken();
+      debugPrint('deleteAccount URL: ${Environment.deleteAccountEndpoint}');
 
-    if (response.statusCode == 200 && responseBody['success'] == true) {
-      return;
-    } else {
-      throw Exception(_extractErrorMessage(responseBody));
+      final body = <String, dynamic>{'password': password};
+      if (reason != null && reason.trim().isNotEmpty) {
+        body['reason'] = reason.trim();
+      }
+
+      final response = await http
+          .post(
+            Uri.parse(Environment.deleteAccountEndpoint),
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+
+      final decoded = jsonDecode(response.body);
+      debugPrint('deleteAccount ${response.statusCode}: $decoded');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      }
+
+      if (decoded is Map<String, dynamic>) {
+        for (final value in decoded.values) {
+          if (value is List && value.isNotEmpty) {
+            throw Exception(value[0].toString());
+          }
+        }
+        throw Exception(_extractErrorMessage(decoded));
+      }
+
+      throw Exception('Unexpected error');
+    } on SocketException {
+      throw Exception('No internet connection');
+    } on http.ClientException {
+      throw Exception('Connection failed');
+    } on FormatException catch (e) {
+      debugPrint('deleteAccount FormatException: $e');
+      throw Exception('Invalid server response');
     }
   }
 }

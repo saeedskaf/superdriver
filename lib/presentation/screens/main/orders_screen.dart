@@ -5,6 +5,7 @@ import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/models/order_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/btn_custom.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -19,22 +20,92 @@ class _OrdersScreenState extends State<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  List<Order> _activeOrders = [];
+  List<Order> _historyOrders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadOrders();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    _loadActiveOrders();
   }
 
-  void _loadOrders() {
-    context.read<OrdersBloc>().add(const OrdersLoadRequested());
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    if (_tabController.index == 0) {
+      _loadActiveOrders();
+    } else {
+      _loadHistoryOrders();
+    }
+  }
+
+  void _loadActiveOrders() {
+    context.read<OrdersBloc>().add(const OrdersActiveLoadRequested());
+  }
+
+  void _loadHistoryOrders() {
+    context.read<OrdersBloc>().add(const OrdersHistoryLoadRequested());
+  }
+
+  void _refreshCurrentTab() {
+    if (_tabController.index == 0) {
+      _loadActiveOrders();
+    } else {
+      _loadHistoryOrders();
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
+
+  // ── Snackbar ──
+
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    required bool isError,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? ColorsCustom.error : ColorsCustom.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // ── Navigation ──
+
+  void _navigateToOrderDetails(BuildContext context, Order order) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<OrdersBloc>(),
+          child: OrderDetailsScreen(orderId: order.id),
+        ),
+      ),
+    ).then((_) {
+      if (mounted) _refreshCurrentTab();
+    });
+  }
+
+  void _reorder(BuildContext context, Order order) {
+    context.read<OrdersBloc>().add(OrderReorderRequested(orderId: order.id));
+  }
+
+  // ── Build ──
 
   @override
   Widget build(BuildContext context) {
@@ -43,93 +114,118 @@ class _OrdersScreenState extends State<OrdersScreen>
     return Scaffold(
       backgroundColor: ColorsCustom.background,
       body: BlocConsumer<OrdersBloc, OrdersState>(
+        listenWhen: (previous, current) {
+          return current is OrdersLoaded ||
+              current is OrdersLoading ||
+              current is OrdersError ||
+              current is OrdersEmpty ||
+              current is OrderCancelled ||
+              current is OrderCancelError ||
+              current is OrderReordered ||
+              current is OrderReorderError;
+        },
         listener: (context, state) {
-          if (state is OrdersError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
+          if (state is OrdersLoaded) {
+            setState(() {
+              _activeOrders = state.activeOrders;
+              _historyOrders = state.historyOrders;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          } else if (state is OrdersLoading) {
+            setState(() => _isLoading = true);
+          } else if (state is OrdersError) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = state.message;
+            });
+            _showSnackBar(context, state.message, isError: true);
+          } else if (state is OrdersEmpty) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = null;
+            });
           } else if (state is OrderCancelled) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.orderCancelled),
-                backgroundColor: Colors.green.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-            // Refresh orders
-            _loadOrders();
+            _refreshCurrentTab();
+          } else if (state is OrderCancelError) {
+            _showSnackBar(context, state.message, isError: true);
           } else if (state is OrderReordered) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.orderReordered),
-                backgroundColor: Colors.green.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
+            _showSnackBar(context, l10n.orderReordered, isError: false);
+          } else if (state is OrderReorderError) {
+            _showSnackBar(context, state.message, isError: true);
           }
         },
         builder: (context, state) {
-          return SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context, l10n),
-                _buildTabs(context, l10n),
-                Expanded(child: _buildBody(context, l10n, state)),
-              ],
-            ),
+          return Column(
+            children: [
+              _buildHeader(l10n),
+              _buildTabs(l10n),
+              Expanded(child: _buildTabContent(l10n)),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+  // ── Header ──
+
+  Widget _buildHeader(AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      decoration: const BoxDecoration(color: Colors.white),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 16,
+        24,
+        16,
+      ),
+      decoration: const BoxDecoration(color: ColorsCustom.surface),
+      child: Row(
         children: [
-          TextCustom(
-            text: l10n.myOrders,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: ColorsCustom.textPrimary,
+          ClipRRect(
+            child: Image.asset(
+              'assets/icons/orders_empty_state.png',
+              width: 50,
+              height: 50,
+              fit: BoxFit.contain,
+            ),
           ),
-          const SizedBox(height: 4),
-          TextCustom(
-            text: l10n.trackYourOrders,
-            fontSize: 14,
-            color: ColorsCustom.textSecondary,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextCustom(
+                  text: l10n.myOrders,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: ColorsCustom.textPrimary,
+                ),
+                const SizedBox(height: 2),
+                TextCustom(
+                  text: l10n.trackYourOrders,
+                  fontSize: 13,
+                  color: ColorsCustom.textSecondary,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabs(BuildContext context, AppLocalizations l10n) {
+  // ── Tabs ──
+
+  Widget _buildTabs(AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ColorsCustom.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withAlpha(10),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -137,21 +233,15 @@ class _OrdersScreenState extends State<OrdersScreen>
         height: 50,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: ColorsCustom.grey100,
+          color: ColorsCustom.background,
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ColorsCustom.border),
         ),
         child: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: ColorsCustom.surface,
+            borderRadius: BorderRadius.circular(11),
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
@@ -164,65 +254,83 @@ class _OrdersScreenState extends State<OrdersScreen>
           ),
           unselectedLabelStyle: const TextStyle(
             fontFamily: 'Cairo',
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
           tabs: [
-            Tab(text: l10n.active),
-            Tab(text: l10n.completed),
-            Tab(text: l10n.cancelled),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.pending_actions_rounded, size: 18),
+                  const SizedBox(width: 6),
+                  Text(l10n.active),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.history_rounded, size: 18),
+                  const SizedBox(width: 6),
+                  Text(l10n.history),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    AppLocalizations l10n,
-    OrdersState state,
-  ) {
-    if (state is OrdersLoading) {
-      return _buildLoadingState();
-    }
+  // ── Tab Content ──
 
-    if (state is OrdersError) {
-      return _buildErrorState(context, l10n, state.message);
-    }
-
-    if (state is OrdersEmpty) {
-      return TabBarView(
-        controller: _tabController,
-        children: [
-          _buildEmptyState(context, l10n, l10n.noActiveOrders),
-          _buildEmptyState(context, l10n, l10n.noCompletedOrders),
-          _buildEmptyState(context, l10n, l10n.noCancelledOrders),
-        ],
-      );
-    }
-
-    if (state is OrdersLoaded) {
-      return TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOrdersList(context, l10n, state.activeOrders, 'active'),
-          _buildOrdersList(context, l10n, state.completedOrders, 'completed'),
-          _buildOrdersList(context, l10n, state.cancelledOrders, 'cancelled'),
-        ],
-      );
-    }
-
-    return _buildEmptyState(context, l10n, l10n.noOrders);
+  Widget _buildTabContent(AppLocalizations l10n) {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildOrdersTab(
+          l10n,
+          orders: _activeOrders,
+          emptyMessage: l10n.noActiveOrders,
+          emptyIcon: Icons.pending_actions_outlined,
+          isActiveTab: true,
+        ),
+        _buildOrdersTab(
+          l10n,
+          orders: _historyOrders,
+          emptyMessage: l10n.noOrderHistory,
+          emptyIcon: Icons.history_rounded,
+          isActiveTab: false,
+        ),
+      ],
+    );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildOrdersTab(
+    AppLocalizations l10n, {
+    required List<Order> orders,
+    required String emptyMessage,
+    required IconData emptyIcon,
+    required bool isActiveTab,
+  }) {
+    if (_isLoading) return _buildLoadingState(l10n);
+    if (_errorMessage != null) return _buildErrorState(l10n);
+    if (orders.isEmpty) return _buildEmptyState(l10n, emptyMessage, emptyIcon);
+    return _buildOrdersList(l10n, orders, isActiveTab);
+  }
+
+  // ── Loading ──
+
+  Widget _buildLoadingState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 50,
-            height: 50,
+          const SizedBox(
+            width: 44,
+            height: 44,
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation<Color>(ColorsCustom.primary),
@@ -230,8 +338,8 @@ class _OrdersScreenState extends State<OrdersScreen>
           ),
           const SizedBox(height: 16),
           TextCustom(
-            text: 'جاري التحميل...',
-            fontSize: 16,
+            text: l10n.loading,
+            fontSize: 15,
             color: ColorsCustom.textSecondary,
           ),
         ],
@@ -239,63 +347,46 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    AppLocalizations l10n,
-    String message,
-  ) {
+  // ── Error ──
+
+  Widget _buildErrorState(AppLocalizations l10n) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
+              decoration: const BoxDecoration(
+                color: ColorsCustom.errorBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.error_outline_rounded,
-                size: 50,
-                color: Colors.red.shade400,
+                size: 48,
+                color: ColorsCustom.error,
               ),
             ),
             const SizedBox(height: 24),
             TextCustom(
               text: l10n.errorOccurred,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: ColorsCustom.textPrimary,
             ),
             const SizedBox(height: 8),
             TextCustom(
-              text: message,
+              text: _errorMessage ?? '',
               fontSize: 14,
               color: ColorsCustom.textSecondary,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loadOrders,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorsCustom.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: TextCustom(
-                text: l10n.retry,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            ButtonCustom.primary(
+              text: l10n.retry,
+              onPressed: _refreshCurrentTab,
             ),
           ],
         ),
@@ -303,13 +394,15 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
+  // ── Empty ──
+
   Widget _buildEmptyState(
-    BuildContext context,
     AppLocalizations l10n,
     String message,
+    IconData icon,
   ) {
     return RefreshIndicator(
-      onRefresh: () async => _loadOrders(),
+      onRefresh: () async => _refreshCurrentTab(),
       color: ColorsCustom.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -319,33 +412,23 @@ class _OrdersScreenState extends State<OrdersScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.8, end: 1),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.elasticOut,
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: ColorsCustom.grey100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.receipt_long_outlined,
-                          size: 56,
-                          color: ColorsCustom.grey400,
-                        ),
-                      ),
-                    );
-                  },
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    color: ColorsCustom.primarySoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 48,
+                    color: ColorsCustom.primary.withAlpha(153),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 TextCustom(
                   text: message,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: ColorsCustom.textSecondary,
                 ),
@@ -357,172 +440,121 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
+  // ── Orders List ──
+
   Widget _buildOrdersList(
-    BuildContext context,
     AppLocalizations l10n,
     List<Order> orders,
-    String type,
+    bool isActiveTab,
   ) {
-    if (orders.isEmpty) {
-      String message;
-      switch (type) {
-        case 'active':
-          message = l10n.noActiveOrders;
-          break;
-        case 'completed':
-          message = l10n.noCompletedOrders;
-          break;
-        case 'cancelled':
-          message = l10n.noCancelledOrders;
-          break;
-        default:
-          message = l10n.noOrders;
-      }
-      return _buildEmptyState(context, l10n, message);
-    }
-
     return RefreshIndicator(
-      onRefresh: () async => _loadOrders(),
+      onRefresh: () async => _refreshCurrentTab(),
       color: ColorsCustom.primary,
+      backgroundColor: ColorsCustom.surface,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         itemCount: orders.length,
         itemBuilder: (context, index) {
-          final order = orders[index];
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 300 + (index * 80)),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: Opacity(
-                  opacity: value,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildOrderCard(context, l10n, order),
-                  ),
-                ),
-              );
-            },
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _buildOrderCard(l10n, orders[index], isActiveTab),
           );
         },
       ),
     );
   }
 
-  Widget _buildOrderCard(
-    BuildContext context,
-    AppLocalizations l10n,
-    Order order,
-  ) {
+  // ── Order Card ──
+
+  Widget _buildOrderCard(AppLocalizations l10n, Order order, bool isActiveTab) {
     final statusInfo = _getStatusInfo(order.status, l10n);
+    final Color statusColor = statusInfo['color'];
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: context.read<OrdersBloc>(),
-              child: OrderDetailsScreen(order: order),
-            ),
-          ),
-        );
-      },
+      onTap: () => _navigateToOrderDetails(context, order),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: ColorsCustom.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: ColorsCustom.border),
         ),
         child: Column(
           children: [
+            // ── Header row ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Restaurant Logo
                 Container(
-                  width: 65,
-                  height: 65,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
-                    color: statusInfo['color'].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: statusColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: statusColor.withAlpha(51)),
                   ),
-                  child: order.restaurantLogo != null
+                  child:
+                      (order.restaurantLogo != null &&
+                          order.restaurantLogo!.isNotEmpty)
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(13),
                           child: Image.network(
                             order.restaurantLogo!,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(
                               Icons.restaurant_rounded,
-                              color: statusInfo['color'],
-                              size: 30,
+                              color: statusColor,
+                              size: 26,
                             ),
                           ),
                         )
                       : Icon(
                           Icons.restaurant_rounded,
-                          color: statusInfo['color'],
-                          size: 30,
+                          color: statusColor,
+                          size: 26,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          TextCustom(
-                            text: order.orderNumber,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: ColorsCustom.textPrimary,
-                          ),
-                          _buildStatusBadge(statusInfo),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.restaurant_rounded,
-                            size: 16,
-                            color: ColorsCustom.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
                           Expanded(
                             child: TextCustom(
-                              text: order.restaurantName,
-                              fontSize: 14,
-                              color: ColorsCustom.textSecondary,
+                              text: _getShortOrderNumber(order.orderNumber),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ColorsCustom.textPrimary,
                               maxLines: 1,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          _buildStatusBadge(statusInfo),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      TextCustom(
+                        text: order.restaurantName,
+                        fontSize: 14,
+                        color: ColorsCustom.textSecondary,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            size: 16,
-                            color: ColorsCustom.textSecondary,
+                          const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 14,
+                            color: ColorsCustom.secondaryDark,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           TextCustom(
-                            text: '${order.itemsCount} ${l10n.items}',
-                            fontSize: 13,
-                            color: ColorsCustom.textSecondary,
+                            text:
+                                '${l10n.items}: ${_parseItemsCount(order.itemsCount)}',
+                            fontSize: 12,
+                            color: ColorsCustom.secondaryDark,
                           ),
                         ],
                       ),
@@ -531,127 +563,88 @@ class _OrdersScreenState extends State<OrdersScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(height: 1, color: ColorsCustom.grey200),
-            const SizedBox(height: 16),
+
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: ColorsCustom.border, height: 1),
+            ),
+
+            // ── Footer ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.access_time_rounded,
-                      size: 18,
+                      size: 16,
                       color: ColorsCustom.textSecondary,
                     ),
                     const SizedBox(width: 6),
                     TextCustom(
                       text: _formatDate(order.createdAt, l10n),
-                      fontSize: 13,
+                      fontSize: 12,
                       color: ColorsCustom.textSecondary,
                     ),
                   ],
                 ),
-                TextCustom(
-                  text:
-                      '${order.totalDouble.toStringAsFixed(2)} ${l10n.currency}',
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: ColorsCustom.primary,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorsCustom.primarySoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: TextCustom(
+                    text:
+                        '${order.totalDouble.toStringAsFixed(0)} ${l10n.currency}',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: ColorsCustom.primary,
+                  ),
                 ),
               ],
             ),
 
-            // Action buttons for active orders
-            if (order.isActive && order.canCancel) ...[
-              const SizedBox(height: 16),
+            // ── Action buttons ──
+            if (isActiveTab && ['draft', 'placed'].contains(order.status)) ...[
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: ButtonCustom.secondary(
+                      text: l10n.cancelOrder,
                       onPressed: () => _showCancelDialog(context, l10n, order),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade700,
-                        side: BorderSide(color: Colors.red.shade200),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: TextCustom(
-                        text: l10n.cancelOrder,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade700,
-                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BlocProvider.value(
-                              value: context.read<OrdersBloc>(),
-                              child: OrderDetailsScreen(order: order),
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorsCustom.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: TextCustom(
-                        text: l10n.trackOrder,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    child: ButtonCustom.primary(
+                      text: l10n.orderDetails,
+                      onPressed: () => _navigateToOrderDetails(context, order),
                     ),
                   ),
                 ],
               ),
+            ] else if (isActiveTab) ...[
+              const SizedBox(height: 14),
+              ButtonCustom.primary(
+                text: l10n.orderDetails,
+                onPressed: () => _navigateToOrderDetails(context, order),
+              ),
             ],
 
-            // Reorder button for completed orders
-            if (order.isCompleted) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => _reorder(context, order),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ColorsCustom.primary,
-                    side: BorderSide(color: ColorsCustom.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.replay_rounded,
-                        size: 20,
-                        color: ColorsCustom.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      TextCustom(
-                        text: l10n.reorder,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: ColorsCustom.primary,
-                      ),
-                    ],
-                  ),
+            if (!isActiveTab && order.isCompleted) ...[
+              const SizedBox(height: 14),
+              ButtonCustom.secondary(
+                text: l10n.reorder,
+                onPressed: () => _reorder(context, order),
+                icon: const Icon(
+                  Icons.replay_rounded,
+                  size: 18,
+                  color: ColorsCustom.primary,
                 ),
               ),
             ],
@@ -662,104 +655,40 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildStatusBadge(Map<String, dynamic> statusInfo) {
+    final Color color = statusInfo['color'];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: statusInfo['color'].withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withAlpha(31),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(51)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(statusInfo['icon'], size: 14, color: statusInfo['color']),
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: Image.asset(
+              statusInfo['image'],
+              fit: BoxFit.contain,
+              color: color,
+            ),
+          ),
           const SizedBox(width: 4),
           TextCustom(
             text: statusInfo['label'],
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: statusInfo['color'],
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ],
       ),
     );
   }
 
-  Map<String, dynamic> _getStatusInfo(String status, AppLocalizations l10n) {
-    switch (status) {
-      case 'draft':
-        return {
-          'label': l10n.statusDraft,
-          'color': Colors.grey,
-          'icon': Icons.edit_outlined,
-        };
-      case 'pending':
-        return {
-          'label': l10n.statusPending,
-          'color': Colors.orange,
-          'icon': Icons.hourglass_empty_rounded,
-        };
-      case 'accepted':
-        return {
-          'label': l10n.statusAccepted,
-          'color': Colors.blue,
-          'icon': Icons.check_circle_outline_rounded,
-        };
-      case 'preparing':
-        return {
-          'label': l10n.statusPreparing,
-          'color': Colors.purple,
-          'icon': Icons.restaurant_rounded,
-        };
-      case 'ready':
-        return {
-          'label': l10n.statusReady,
-          'color': Colors.teal,
-          'icon': Icons.inventory_2_rounded,
-        };
-      case 'picked':
-        return {
-          'label': l10n.statusPicked,
-          'color': ColorsCustom.primary,
-          'icon': Icons.delivery_dining_rounded,
-        };
-      case 'delivered':
-      case 'completed':
-        return {
-          'label': l10n.statusCompleted,
-          'color': Colors.green,
-          'icon': Icons.check_circle_rounded,
-        };
-      case 'cancelled':
-        return {
-          'label': l10n.statusCancelled,
-          'color': Colors.red,
-          'icon': Icons.cancel_rounded,
-        };
-      default:
-        return {
-          'label': status,
-          'color': Colors.grey,
-          'icon': Icons.help_outline_rounded,
-        };
-    }
-  }
-
-  String _formatDate(DateTime date, AppLocalizations l10n) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inMinutes < 60) {
-      return '${l10n.ago} ${diff.inMinutes} ${l10n.minutes}';
-    } else if (diff.inHours < 24) {
-      return '${l10n.ago} ${diff.inHours} ${l10n.hours}';
-    } else if (diff.inDays == 1) {
-      return l10n.yesterday;
-    } else if (diff.inDays < 7) {
-      return '${l10n.ago} ${diff.inDays} ${l10n.days}';
-    } else {
-      return DateFormat('dd/MM/yyyy').format(date);
-    }
-  }
+  // ── Cancel Dialog ──
 
   void _showCancelDialog(
     BuildContext context,
@@ -770,74 +699,178 @@ class _OrdersScreenState extends State<OrdersScreen>
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ColorsCustom.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: TextCustom(
-          text: l10n.cancelOrder,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: ColorsCustom.textPrimary,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextCustom(
-              text: l10n.cancelOrderConfirmation,
-              fontSize: 15,
-              color: ColorsCustom.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: l10n.cancellationReason,
-                filled: true,
-                fillColor: ColorsCustom.grey100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        contentPadding: EdgeInsets.zero,
+        content: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: ColorsCustom.errorBg,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.cancel_outlined,
+                  color: ColorsCustom.error,
+                  size: 28,
                 ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: TextCustom(
-              text: l10n.back,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: ColorsCustom.textSecondary,
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<OrdersBloc>().add(
-                OrderCancelRequested(
-                  orderId: order.id,
-                  reason: reasonController.text.isNotEmpty
-                      ? reasonController.text
-                      : 'تم الإلغاء من قبل المستخدم',
+              const SizedBox(height: 20),
+              TextCustom(
+                text: l10n.cancelOrder,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ColorsCustom.textPrimary,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              TextCustom(
+                text: l10n.cancelOrderConfirmation,
+                fontSize: 14,
+                color: ColorsCustom.textSecondary,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: ColorsCustom.textPrimary,
+                  fontFamily: 'Cairo',
                 ),
-              );
-            },
-            child: TextCustom(
-              text: l10n.confirmCancel,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
-            ),
+                decoration: InputDecoration(
+                  hintText: l10n.cancellationReason,
+                  hintStyle: const TextStyle(
+                    color: ColorsCustom.textHint,
+                    fontSize: 13,
+                    fontFamily: 'Cairo',
+                  ),
+                  filled: true,
+                  fillColor: ColorsCustom.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.all(14),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ButtonCustom.secondary(
+                      text: l10n.back,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ButtonCustom.primary(
+                      text: l10n.confirm,
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.read<OrdersBloc>().add(
+                          OrderCancelRequested(
+                            orderId: order.id,
+                            reason: reasonController.text.isNotEmpty
+                                ? reasonController.text
+                                : l10n.cancelledByUser,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  void _reorder(BuildContext context, Order order) {
-    context.read<OrdersBloc>().add(OrderReorderRequested(orderId: order.id));
+  // ── Helpers ──
+
+  Map<String, dynamic> _getStatusInfo(String status, AppLocalizations l10n) {
+    switch (status) {
+      case 'draft':
+        return {
+          'label': l10n.statusDraft,
+          'color': ColorsCustom.textSecondary,
+          'image': 'assets/icons/status_pending.png',
+        };
+      case 'placed':
+        return {
+          'label': l10n.statusPlaced,
+          'color': ColorsCustom.secondaryDark,
+          'image': 'assets/icons/status_confirmed.png',
+        };
+      case 'preparing':
+        return {
+          'label': l10n.statusPreparing,
+          'color': Colors.blue,
+          'image': 'assets/icons/status_preparing.png',
+        };
+      case 'picked':
+        return {
+          'label': l10n.statusPicked,
+          'color': ColorsCustom.primary,
+          'image': 'assets/icons/status_ready.png',
+        };
+      case 'delivered':
+        return {
+          'label': l10n.statusDelivered,
+          'color': ColorsCustom.success,
+          'image': 'assets/icons/status_delivering.png',
+        };
+      case 'cancelled':
+        return {
+          'label': l10n.statusCancelled,
+          'color': ColorsCustom.error,
+          'image': 'assets/icons/status_cancelled.png',
+        };
+      default:
+        return {
+          'label': status,
+          'color': ColorsCustom.textSecondary,
+          'image': 'assets/icons/status_error.png',
+        };
+    }
+  }
+
+  String _formatDate(DateTime date, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 60) {
+      return l10n.minutesAgo(diff.inMinutes);
+    } else if (diff.inHours < 24) {
+      return l10n.hoursAgo(diff.inHours);
+    } else if (diff.inDays == 1) {
+      return l10n.yesterday;
+    } else if (diff.inDays < 7) {
+      return l10n.daysAgo(diff.inDays);
+    } else {
+      return DateFormat('dd/MM/yyyy').format(date);
+    }
+  }
+
+  String _getShortOrderNumber(String orderNumber) {
+    if (orderNumber.contains('-')) {
+      final parts = orderNumber.split('-');
+      if (parts.length >= 3) return '#${parts.last}';
+    }
+    return '#$orderNumber';
+  }
+
+  int _parseItemsCount(String itemsCount) {
+    return int.tryParse(itemsCount) ?? 0;
   }
 }

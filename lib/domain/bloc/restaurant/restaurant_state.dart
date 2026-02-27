@@ -7,30 +7,61 @@ abstract class RestaurantState extends Equatable {
   List<Object?> get props => [];
 }
 
+// ============================================
+// INITIAL & LOADING STATES
+// ============================================
+
 class RestaurantInitial extends RestaurantState {
   const RestaurantInitial();
 }
 
-/// Restaurants list states
 class RestaurantsLoading extends RestaurantState {
   const RestaurantsLoading();
 }
+
+// ============================================
+// RESTAURANTS LIST STATES
+// ============================================
 
 class RestaurantsLoaded extends RestaurantState {
   final List<RestaurantListItem> restaurants;
   final RestaurantFilterParams? filters;
 
-  const RestaurantsLoaded({
-    required this.restaurants,
-    this.filters,
-  });
+  const RestaurantsLoaded({required this.restaurants, this.filters});
+
+  /// Check if currently filtering by category
+  bool get isFilteringByCategory => filters?.categoryId != null;
+
+  /// Check if currently searching
+  bool get isSearching =>
+      filters?.search != null && filters!.search!.isNotEmpty;
+
+  /// Get current search query if any
+  String? get searchQuery => filters?.search;
+
+  /// Get current category ID if filtering
+  int? get categoryId => filters?.categoryId;
 
   @override
   List<Object?> get props => [restaurants, filters];
 }
 
 class RestaurantsEmpty extends RestaurantState {
-  const RestaurantsEmpty();
+  final int? categoryId;
+
+  const RestaurantsEmpty({this.categoryId});
+
+  @override
+  List<Object?> get props => [categoryId];
+}
+
+class RestaurantsSearchEmpty extends RestaurantState {
+  final String query;
+
+  const RestaurantsSearchEmpty({required this.query});
+
+  @override
+  List<Object?> get props => [query];
 }
 
 class RestaurantsError extends RestaurantState {
@@ -42,7 +73,10 @@ class RestaurantsError extends RestaurantState {
   List<Object?> get props => [message];
 }
 
-/// Restaurant details states
+// ============================================
+// RESTAURANT DETAILS STATES
+// ============================================
+
 class RestaurantDetailsLoading extends RestaurantState {
   const RestaurantDetailsLoading();
 }
@@ -65,7 +99,10 @@ class RestaurantDetailsError extends RestaurantState {
   List<Object?> get props => [message];
 }
 
-/// Categories states
+// ============================================
+// CATEGORIES STATES
+// ============================================
+
 class CategoriesLoading extends RestaurantState {
   const CategoriesLoading();
 }
@@ -88,7 +125,10 @@ class CategoriesError extends RestaurantState {
   List<Object?> get props => [message];
 }
 
-/// Nearby restaurants states
+// ============================================
+// NEARBY RESTAURANTS STATES
+// ============================================
+
 class NearbyRestaurantsLoading extends RestaurantState {
   const NearbyRestaurantsLoading();
 }
@@ -102,46 +142,20 @@ class NearbyRestaurantsLoaded extends RestaurantState {
   List<Object?> get props => [restaurants];
 }
 
+class NearbyRestaurantsEmpty extends RestaurantState {
+  final double lat;
+  final double lng;
+
+  const NearbyRestaurantsEmpty({required this.lat, required this.lng});
+
+  @override
+  List<Object?> get props => [lat, lng];
+}
+
 class NearbyRestaurantsError extends RestaurantState {
   final String message;
 
   const NearbyRestaurantsError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-/// Search states
-class RestaurantsSearching extends RestaurantState {
-  const RestaurantsSearching();
-}
-
-class RestaurantsSearchResults extends RestaurantState {
-  final List<RestaurantListItem> restaurants;
-  final String query;
-
-  const RestaurantsSearchResults({
-    required this.restaurants,
-    required this.query,
-  });
-
-  @override
-  List<Object?> get props => [restaurants, query];
-}
-
-class RestaurantsSearchEmpty extends RestaurantState {
-  final String query;
-
-  const RestaurantsSearchEmpty({required this.query});
-
-  @override
-  List<Object?> get props => [query];
-}
-
-class RestaurantsSearchError extends RestaurantState {
-  final String message;
-
-  const RestaurantsSearchError(this.message);
 
   @override
   List<Object?> get props => [message];

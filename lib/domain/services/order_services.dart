@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:superdriver/data/env/environment.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
@@ -9,25 +10,22 @@ class OrderServices {
     final token = await secureStorage.getAccessToken();
     return {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer $token',
+      if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
-  String _extractErrorMessage(Map<String, dynamic> responseBody) {
-    if (responseBody['errors'] != null) {
-      final errors = responseBody['errors'] as Map<String, dynamic>;
-      final firstError = errors.values.first;
-      if (firstError is List && firstError.isNotEmpty) {
-        return firstError[0].toString();
+  String _extractErrorMessage(dynamic responseBody) {
+    if (responseBody is Map<String, dynamic>) {
+      for (var value in responseBody.values) {
+        if (value is List && value.isNotEmpty) {
+          return value[0].toString();
+        }
+        if (value is String) {
+          return value;
+        }
       }
     }
-    if (responseBody['message'] != null) {
-      return responseBody['message'].toString();
-    }
-    if (responseBody['detail'] != null) {
-      return responseBody['detail'].toString();
-    }
-    return 'حدث خطأ غير متوقع';
+    return 'Unexpected error';
   }
 
   /// Get all user orders
@@ -36,10 +34,12 @@ class OrderServices {
     final headers = await _getAuthHeaders();
 
     final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
-    print('Get Orders Response: $responseBody');
+
+    log('Get Orders Response Status: ${response.statusCode}');
+    log('Get Orders Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       if (responseBody is List) {
         return responseBody
             .map((item) => OrderListItem.fromJson(item))
@@ -47,6 +47,7 @@ class OrderServices {
       }
       return [];
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -57,10 +58,12 @@ class OrderServices {
     final headers = await _getAuthHeaders();
 
     final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
-    print('Get Active Orders Response: $responseBody');
+
+    log('Get Active Orders Response Status: ${response.statusCode}');
+    log('Get Active Orders Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       if (responseBody is List) {
         return responseBody.map((item) => Order.fromJson(item)).toList();
       } else if (responseBody is Map<String, dynamic>) {
@@ -68,6 +71,7 @@ class OrderServices {
       }
       return [];
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -78,10 +82,12 @@ class OrderServices {
     final headers = await _getAuthHeaders();
 
     final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
-    print('Get Orders History Response: $responseBody');
+
+    log('Get Orders History Response Status: ${response.statusCode}');
+    log('Get Orders History Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       if (responseBody is List) {
         return responseBody.map((item) => Order.fromJson(item)).toList();
       } else if (responseBody is Map<String, dynamic>) {
@@ -89,6 +95,7 @@ class OrderServices {
       }
       return [];
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -99,12 +106,15 @@ class OrderServices {
     final headers = await _getAuthHeaders();
 
     final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
-    print('Get Order Details Response: $responseBody');
+
+    log('Get Order Details Response Status: ${response.statusCode}');
+    log('Get Order Details Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       return Order.fromJson(responseBody);
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -114,18 +124,22 @@ class OrderServices {
     final uri = Uri.parse(Environment.createOrderEndpoint);
     final headers = await _getAuthHeaders();
 
+    log('Create Order Request: ${jsonEncode(request.toJson())}');
+
     final response = await http.post(
       uri,
       headers: headers,
       body: jsonEncode(request.toJson()),
     );
 
-    final responseBody = jsonDecode(response.body);
-    print('Create Order Response: $responseBody');
+    log('Create Order Response Status: ${response.statusCode}');
+    log('Create Order Response: ${response.body}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseBody = jsonDecode(response.body);
       return Order.fromJson(responseBody);
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -135,15 +149,36 @@ class OrderServices {
     final uri = Uri.parse(Environment.placeOrderEndpoint(orderId));
     final headers = await _getAuthHeaders();
 
+    log('Place Order Request URL: $uri');
+
     final response = await http.post(uri, headers: headers);
 
-    final responseBody = jsonDecode(response.body);
-    print('Place Order Response: $responseBody');
+    log('Place Order Response Status: ${response.statusCode}');
+    log('Place Order Response Body: ${response.body}');
+
+    if (response.headers['content-type']?.contains('text/html') ?? false) {
+      log('ERROR: Received HTML instead of JSON');
+      throw Exception('Server error');
+    }
 
     if (response.statusCode == 200) {
-      return Order.fromJson(responseBody);
+      try {
+        final responseBody = jsonDecode(response.body);
+        return Order.fromJson(responseBody);
+      } catch (e) {
+        log('ERROR: Failed to parse JSON: $e');
+        throw Exception('Failed to parse server response');
+      }
     } else {
-      throw Exception(_extractErrorMessage(responseBody));
+      try {
+        final responseBody = jsonDecode(response.body);
+        throw Exception(_extractErrorMessage(responseBody));
+      } catch (e) {
+        if (e is Exception && e.toString().contains('Exception:')) {
+          rethrow;
+        }
+        throw Exception('Unexpected error (${response.statusCode})');
+      }
     }
   }
 
@@ -161,12 +196,14 @@ class OrderServices {
       body: jsonEncode({'reason': reason}),
     );
 
-    final responseBody = jsonDecode(response.body);
-    print('Cancel Order Response: $responseBody');
+    log('Cancel Order Response Status: ${response.statusCode}');
+    log('Cancel Order Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       return Order.fromJson(responseBody);
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -178,12 +215,14 @@ class OrderServices {
 
     final response = await http.post(uri, headers: headers);
 
-    final responseBody = jsonDecode(response.body);
-    print('Reorder Response: $responseBody');
+    log('Reorder Response Status: ${response.statusCode}');
+    log('Reorder Response: ${response.body}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseBody = jsonDecode(response.body);
       return Order.fromJson(responseBody);
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -194,12 +233,15 @@ class OrderServices {
     final headers = await _getAuthHeaders();
 
     final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
-    print('Track Order Response: $responseBody');
+
+    log('Track Order Response Status: ${response.statusCode}');
+    log('Track Order Response: ${response.body}');
 
     if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
       return Order.fromJson(responseBody);
     } else {
+      final responseBody = jsonDecode(response.body);
       throw Exception(_extractErrorMessage(responseBody));
     }
   }

@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/btn_custom.dart';
 import 'package:superdriver/presentation/components/form_field_custom.dart';
+import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -38,65 +40,61 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     }
   }
 
+  void _showSnackBar(String message, {bool isError = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? ColorsCustom.error : ColorsCustom.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: ColorsCustom.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: ColorsCustom.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 18,
-              color: Colors.black87,
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: ColorsCustom.primarySoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: ColorsCustom.primary,
+              ),
             ),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         title: TextCustom(
           text: l10n.changePassword,
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+          color: ColorsCustom.textPrimary,
         ),
         centerTitle: true,
       ),
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is PasswordChangeSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.passwordChangedSuccessfully),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            );
+            _showSnackBar(l10n.passwordChangedSuccessfully);
             Navigator.pop(context);
           } else if (state is ProfileError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: const Color(0xFFD32F2F),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            );
+            _showSnackBar(state.message, isError: true);
           }
         },
         builder: (context, state) {
@@ -108,62 +106,42 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  // Security Icon Header
+                  // Icon
                   Container(
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFFD32F2F).withOpacity(0.15),
-                          const Color(0xFFD32F2F).withOpacity(0.05),
-                        ],
-                      ),
+                      color: ColorsCustom.primarySoft,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD32F2F).withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.lock_outline_rounded,
-                        size: 48,
-                        color: const Color(0xFFD32F2F).withOpacity(0.6),
+                      border: Border.all(
+                        color: ColorsCustom.primary.withAlpha(51),
                       ),
+                    ),
+                    child: Icon(
+                      Icons.lock_outline_rounded,
+                      size: 48,
+                      color: ColorsCustom.primary.withAlpha(153),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   TextCustom(
                     text: l10n.useStrongPassword,
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: ColorsCustom.textSecondary,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Form Fields Container
+                  // Form card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: ColorsCustom.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: ColorsCustom.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Old Password
                         FormFieldCustom(
                           controller: _oldPasswordController,
                           label: l10n.currentPassword,
@@ -177,8 +155,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           },
                         ),
                         const SizedBox(height: 20),
-
-                        // New Password
                         FormFieldCustom(
                           controller: _newPasswordController,
                           label: l10n.newPassword,
@@ -195,8 +171,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           },
                         ),
                         const SizedBox(height: 20),
-
-                        // Confirm Password
                         FormFieldCustom(
                           controller: _confirmPasswordController,
                           label: l10n.confirmPassword,
@@ -215,49 +189,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Change Password Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _changePassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD32F2F),
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey.shade300,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
+                  // Save button
+                  ButtonCustom.primary(
+                    text: l10n.changePassword,
+                    onPressed: isLoading ? null : _changePassword,
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                ColorsCustom.textOnPrimary,
                               ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle_outline,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                TextCustom(
-                                  text: l10n.changePassword,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ],
                             ),
-                    ),
+                          )
+                        : const Icon(
+                            Icons.check_circle_rounded,
+                            color: ColorsCustom.textOnPrimary,
+                            size: 20,
+                          ),
                   ),
                 ],
               ),

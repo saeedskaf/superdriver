@@ -14,6 +14,10 @@ class Environment {
   static const String changePasswordEndpoint =
       '$baseUrl/api/auth/change-password/';
 
+  // Account endpoints
+  static const String deleteAccountEndpoint =
+      '$baseUrl/api/auth/delete-account/';
+
   // Address endpoints
   static const String addressesEndpoint = '$baseUrl/api/addresses/';
   static const String currentAddressEndpoint =
@@ -100,4 +104,19 @@ class Environment {
   // Review endpoints
   static const String createDriverReviewEndpoint =
       '$baseUrl/api/reviews/driver/create/';
+
+  // Notification endpoints
+  static const String notificationsEndpoint = '$baseUrl/api/notifications/';
+  static String notificationDetailEndpoint(int id) =>
+      '$baseUrl/api/notifications/$id/';
+  static String notificationReadEndpoint(int id) =>
+      '$baseUrl/api/notifications/$id/read/';
+  static const String notificationsReadAllEndpoint =
+      '$baseUrl/api/notifications/read-all/';
+  static const String notificationsUnreadCountEndpoint =
+      '$baseUrl/api/notifications/unread-count/';
+  static const String registerDeviceEndpoint =
+      '$baseUrl/api/notifications/devices/register/';
+  static const String unregisterDeviceEndpoint =
+      '$baseUrl/api/notifications/devices/unregister/';
 }
