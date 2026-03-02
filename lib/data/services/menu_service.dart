@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -32,7 +33,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Menu Categories Response: $responseBody');
@@ -85,7 +86,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Products Response: $responseBody');
@@ -117,7 +118,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Product Details Response: $responseBody');
@@ -144,7 +145,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Deals Response: $responseBody');
@@ -176,7 +177,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Featured Products Response: $responseBody');
@@ -208,7 +209,7 @@ class MenuServices {
       final response = await http.get(
         uri,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       final responseBody = jsonDecode(response.body);
       log('Get Popular Products Response: $responseBody');

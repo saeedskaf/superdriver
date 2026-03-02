@@ -1,7 +1,9 @@
+import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/order_model.dart';
-import 'package:superdriver/domain/services/order_services.dart';
+import 'package:superdriver/data/services/order_service.dart';
 
 part 'orders_event.dart';
 part 'orders_state.dart';
@@ -116,12 +118,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       );
 
       final order = await orderServices.createOrder(request);
-      print(
+      log(
         'OrdersBloc: Order created successfully - ${order.orderNumber}',
-      ); // Debug
+      );
       emit(OrderCreated(order: order));
     } catch (e) {
-      print('OrdersBloc: Order creation failed - $e'); // Debug
+      log('OrdersBloc: Order creation failed - $e');
       emit(OrderCreateError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -133,12 +135,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     emit(const OrderPlacing());
     try {
       final order = await orderServices.placeOrder(event.orderId);
-      print(
+      log(
         'OrdersBloc: Order placed successfully - ${order.orderNumber}',
-      ); // Debug
+      );
       emit(OrderPlaced(order: order));
     } catch (e) {
-      print('OrdersBloc: Order placement failed - $e'); // Debug
+      log('OrdersBloc: Order placement failed - $e');
       emit(OrderPlaceError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -176,6 +178,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     OrderTrackRequested event,
     Emitter<OrdersState> emit,
   ) async {
+    emit(const OrderDetailsLoading());
     try {
       final order = await orderServices.trackOrder(event.orderId);
       emit(OrderTracking(order: order));

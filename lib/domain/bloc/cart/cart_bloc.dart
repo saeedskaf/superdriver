@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
-import 'package:superdriver/domain/services/cart_services.dart';
+import 'package:superdriver/data/services/cart_service.dart';
 
 part 'cart_event.dart';
 part 'cart_state.dart';
@@ -46,11 +46,15 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         emit(CartLoaded(cart: cart));
       }
     } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
       // If cart doesn't exist yet, treat as empty
-      if (e.toString().contains('404') || e.toString().contains('not found')) {
+      if (errorMsg.toLowerCase().contains('not found') ||
+          errorMsg.contains('404') ||
+          errorMsg.contains('does not exist') ||
+          errorMsg.contains('no cart')) {
         emit(const CartEmpty());
       } else {
-        emit(CartError(e.toString().replaceAll('Exception: ', '')));
+        emit(CartError(errorMsg));
       }
     }
   }
@@ -213,6 +217,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     CartValidateRequested event,
     Emitter<CartState> emit,
   ) async {
+    emit(const CartLoading());
     try {
       final isValid = await cartServices.validateCart(event.cartId);
       if (isValid && _currentCart != null) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -28,18 +29,23 @@ class OrderServices {
     return 'Unexpected error';
   }
 
-  /// Get all user orders
+  // all orders
   Future<List<OrderListItem>> getOrders() async {
     final uri = Uri.parse(Environment.ordersEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Get Orders Response Status: ${response.statusCode}');
     log('Get Orders Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       if (responseBody is List) {
         return responseBody
             .map((item) => OrderListItem.fromJson(item))
@@ -47,23 +53,33 @@ class OrderServices {
       }
       return [];
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Get active orders
+  // active orders
   Future<List<Order>> getActiveOrders() async {
     final uri = Uri.parse(Environment.activeOrdersEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Get Active Orders Response Status: ${response.statusCode}');
     log('Get Active Orders Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       if (responseBody is List) {
         return responseBody.map((item) => Order.fromJson(item)).toList();
       } else if (responseBody is Map<String, dynamic>) {
@@ -71,23 +87,33 @@ class OrderServices {
       }
       return [];
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Get orders history (completed + cancelled)
+  // history (completed + cancelled)
   Future<List<Order>> getOrdersHistory() async {
     final uri = Uri.parse(Environment.ordersHistoryEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Get Orders History Response Status: ${response.statusCode}');
     log('Get Orders History Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       if (responseBody is List) {
         return responseBody.map((item) => Order.fromJson(item)).toList();
       } else if (responseBody is Map<String, dynamic>) {
@@ -95,31 +121,46 @@ class OrderServices {
       }
       return [];
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Get order details
+  // order details
   Future<Order> getOrderDetails(int orderId) async {
     final uri = Uri.parse(Environment.orderDetailsEndpoint(orderId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Get Order Details Response Status: ${response.statusCode}');
     log('Get Order Details Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       return Order.fromJson(responseBody);
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Create order from cart
+  // create order
   Future<Order> createOrder(CreateOrderRequest request) async {
     final uri = Uri.parse(Environment.createOrderEndpoint);
     final headers = await _getAuthHeaders();
@@ -130,28 +171,38 @@ class OrderServices {
       uri,
       headers: headers,
       body: jsonEncode(request.toJson()),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     log('Create Order Response Status: ${response.statusCode}');
     log('Create Order Response: ${response.body}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       return Order.fromJson(responseBody);
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Place (confirm) order
+  // place (confirm)
   Future<Order> placeOrder(int orderId) async {
     final uri = Uri.parse(Environment.placeOrderEndpoint(orderId));
     final headers = await _getAuthHeaders();
 
     log('Place Order Request URL: $uri');
 
-    final response = await http.post(uri, headers: headers);
+    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Place Order Response Status: ${response.statusCode}');
     log('Place Order Response Body: ${response.body}');
@@ -182,7 +233,7 @@ class OrderServices {
     }
   }
 
-  /// Cancel order
+  // cancel
   Future<Order> cancelOrder({
     required int orderId,
     required String reason,
@@ -194,54 +245,84 @@ class OrderServices {
       uri,
       headers: headers,
       body: jsonEncode({'reason': reason}),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     log('Cancel Order Response Status: ${response.statusCode}');
     log('Cancel Order Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       return Order.fromJson(responseBody);
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Reorder (create new order from old one)
+  // reorder
   Future<Order> reorder(int orderId) async {
     final uri = Uri.parse(Environment.reorderEndpoint(orderId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.post(uri, headers: headers);
+    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Reorder Response Status: ${response.statusCode}');
     log('Reorder Response: ${response.body}');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       return Order.fromJson(responseBody);
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
 
-  /// Track order
+  // track
   Future<Order> trackOrder(int orderId) async {
     final uri = Uri.parse(Environment.trackOrderEndpoint(orderId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Track Order Response Status: ${response.statusCode}');
     log('Track Order Response: ${response.body}');
 
     if (response.statusCode == 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       return Order.fromJson(responseBody);
     } else {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }

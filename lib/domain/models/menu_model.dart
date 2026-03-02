@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Menu category with subcategories
-class MenuCategory {
+class MenuCategory extends Equatable {
   final int id;
   final String name;
   final String? nameEn;
@@ -12,7 +14,7 @@ class MenuCategory {
   final int productsCount;
   final List<ProductSimpleMenu>? products;
 
-  MenuCategory({
+  const MenuCategory({
     required this.id,
     required this.name,
     this.nameEn,
@@ -47,10 +49,13 @@ class MenuCategory {
           .toList(),
     );
   }
+
+  @override
+  List<Object?> get props => [id, name, slug];
 }
 
 /// Subcategory model
-class SubCategory {
+class SubCategory extends Equatable {
   final int id;
   final String name;
   final String? nameEn;
@@ -58,7 +63,7 @@ class SubCategory {
   final bool isActive;
   final int order;
 
-  SubCategory({
+  const SubCategory({
     required this.id,
     required this.name,
     this.nameEn,
@@ -77,10 +82,13 @@ class SubCategory {
       order: json['order'] ?? 0,
     );
   }
+
+  @override
+  List<Object?> get props => [id, name, slug];
 }
 
 /// Simple product for menu lists
-class ProductSimpleMenu {
+class ProductSimpleMenu extends Equatable {
   final int id;
   final int restaurantId;
   final String restaurantName;
@@ -101,7 +109,7 @@ class ProductSimpleMenu {
   final bool isFeatured;
   final bool isPopular;
 
-  ProductSimpleMenu({
+  const ProductSimpleMenu({
     required this.id,
     required this.restaurantId,
     required this.restaurantName,
@@ -150,10 +158,13 @@ class ProductSimpleMenu {
   double get basePriceDouble => double.tryParse(basePrice) ?? 0;
   double get currentPriceDouble => double.tryParse(currentPrice) ?? 0;
   double get discountAmountDouble => double.tryParse(discountAmount) ?? 0;
+
+  @override
+  List<Object?> get props => [id, name, slug, currentPrice];
 }
 
 /// Detailed product model
-class ProductDetail {
+class ProductDetail extends Equatable {
   final int id;
   final int restaurantId;
   final String restaurantName;
@@ -185,7 +196,7 @@ class ProductDetail {
   final List<ProductImage> images;
   final DateTime createdAt;
 
-  ProductDetail({
+  const ProductDetail({
     required this.id,
     required this.restaurantId,
     required this.restaurantName,
@@ -275,10 +286,13 @@ class ProductDetail {
 
   bool get hasVariations => variations.isNotEmpty;
   bool get hasAddons => addons.isNotEmpty;
+
+  @override
+  List<Object?> get props => [id, name, slug, currentPrice];
 }
 
 /// Product variation
-class ProductVariation {
+class ProductVariation extends Equatable {
   final int id;
   final String name;
   final String? nameEn;
@@ -287,7 +301,7 @@ class ProductVariation {
   final bool isAvailable;
   final int order;
 
-  ProductVariation({
+  const ProductVariation({
     required this.id,
     required this.name,
     this.nameEn,
@@ -311,10 +325,13 @@ class ProductVariation {
 
   double get priceAdjustmentDouble => double.tryParse(priceAdjustment) ?? 0;
   double get totalPriceDouble => double.tryParse(totalPrice) ?? 0;
+
+  @override
+  List<Object?> get props => [id, name, totalPrice];
 }
 
 /// Product addon
-class ProductAddon {
+class ProductAddon extends Equatable {
   final int id;
   final String name;
   final String? nameEn;
@@ -323,7 +340,7 @@ class ProductAddon {
   final int maxQuantity;
   final int order;
 
-  ProductAddon({
+  const ProductAddon({
     required this.id,
     required this.name,
     this.nameEn,
@@ -346,15 +363,18 @@ class ProductAddon {
   }
 
   double get priceDouble => double.tryParse(price) ?? 0;
+
+  @override
+  List<Object?> get props => [id, name, price];
 }
 
 /// Product image
-class ProductImage {
+class ProductImage extends Equatable {
   final int id;
   final String image;
   final int order;
 
-  ProductImage({required this.id, required this.image, required this.order});
+  const ProductImage({required this.id, required this.image, required this.order});
 
   factory ProductImage.fromJson(Map<String, dynamic> json) {
     return ProductImage(
@@ -363,4 +383,7 @@ class ProductImage {
       order: json['order'] ?? 0,
     );
   }
+
+  @override
+  List<Object?> get props => [id, image];
 }

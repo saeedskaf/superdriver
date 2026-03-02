@@ -2,7 +2,7 @@
 import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:superdriver/domain/services/profile_service.dart';
+import 'package:superdriver/data/services/profile_service.dart';
 
 part 'profile_event.dart';
 part 'profile_state.dart';
@@ -14,7 +14,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<ProfileLoadRequested>(_onLoadRequested);
     on<ProfileUpdateRequested>(_onUpdateRequested);
     on<PasswordChangeRequested>(_onPasswordChangeRequested);
-    on<_ProfileRestoreRequested>(_onRestoreRequested);
   }
 
   Future<void> _onLoadRequested(
@@ -45,12 +44,12 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       );
       _lastProfileData = profileData;
       emit(ProfileUpdateSuccess(profileData: profileData));
-      // Schedule restore to ProfileLoaded after UI processes success
-      add(const _ProfileRestoreRequested());
+      // Restore to loaded state so UI can continue operating
+      emit(ProfileLoaded(profileData: profileData));
     } catch (e) {
       emit(ProfileError(e.toString().replaceAll('Exception: ', '')));
       if (_lastProfileData != null) {
-        add(const _ProfileRestoreRequested());
+        emit(ProfileLoaded(profileData: _lastProfileData!));
       }
     }
   }
@@ -68,27 +67,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       );
       emit(const PasswordChangeSuccess());
       if (_lastProfileData != null) {
-        add(const _ProfileRestoreRequested());
+        emit(ProfileLoaded(profileData: _lastProfileData!));
       }
     } catch (e) {
       emit(ProfileError(e.toString().replaceAll('Exception: ', '')));
       if (_lastProfileData != null) {
-        add(const _ProfileRestoreRequested());
+        emit(ProfileLoaded(profileData: _lastProfileData!));
       }
     }
   }
-
-  Future<void> _onRestoreRequested(
-    _ProfileRestoreRequested event,
-    Emitter<ProfileState> emit,
-  ) async {
-    if (_lastProfileData != null) {
-      emit(ProfileLoaded(profileData: _lastProfileData!));
-    }
-  }
-}
-
-/// Internal event to restore ProfileLoaded state after transient states
-class _ProfileRestoreRequested extends ProfileEvent {
-  const _ProfileRestoreRequested();
 }

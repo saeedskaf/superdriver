@@ -1552,7 +1552,41 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatSend => 'إرسال';
 
   @override
+  String get chatPageTitle => 'شُبّيك لُبّيك';
+
+  @override
   String get chatImageSendError => 'فشل في إرسال الصورة';
+
+  @override
+  String get chatSessionUnavailable =>
+      'يرجى تسجيل الدخول مرة أخرى للوصول إلى المحادثات';
+
+  @override
+  String get chatLocation => 'الموقع';
+
+  @override
+  String get chatPickLocation => 'اختر موقع التوصيل';
+
+  @override
+  String get chatSavedAddresses => 'العناوين المحفوظة';
+
+  @override
+  String get chatCurrentLocation => 'الموقع الحالي';
+
+  @override
+  String get chatPickOnMap => 'اختر من الخريطة';
+
+  @override
+  String get chatDeliveryAddress => 'عنوان التوصيل';
+
+  @override
+  String get chatLocationSendError => 'فشل في إرسال الموقع';
+
+  @override
+  String get chatNoSavedAddresses => 'لا توجد عناوين محفوظة';
+
+  @override
+  String get chatDetectingLocation => 'جاري تحديد الموقع...';
 
   @override
   String get chatMessage => 'الرسالة';
@@ -1562,6 +1596,130 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatMessageTooLong => 'الرسالة طويلة جداً';
+
+  @override
+  String get chatNewOrderTitle => 'طلب جديد عبر المحادثة';
+
+  @override
+  String get chatNewOrderSubtitle =>
+      'اختر عنوانًا محفوظًا أولًا، ثم ابدأ بمحادثة الأدمن لإنشاء الطلب.';
+
+  @override
+  String get chatSelectAddress => 'اختر عنوانًا محفوظًا';
+
+  @override
+  String get chatNoAddresses => 'لا توجد عناوين محفوظة';
+
+  @override
+  String get chatNoAddressesBody =>
+      'أضف عنوانًا من الملف الشخصي أولًا حتى تتمكن من إنشاء طلب جديد عبر المحادثة.';
+
+  @override
+  String get chatAddAddress => 'إضافة عنوان';
+
+  @override
+  String get chatManageAddresses => 'إدارة العناوين';
+
+  @override
+  String get chatEmergencyTitle => 'طوارئ أو مشكلة';
+
+  @override
+  String get chatEmergencySubtitle =>
+      'هل تحتاج إلى مساعدة؟ افتح تذكرة بخصوص مشاكل السائق أو الطلب، أو نزاعات التقييم، أو الحالات الطارئة.';
+
+  @override
+  String get chatOpenTicket => 'فتح تذكرة';
+
+  @override
+  String get chatCreating => 'جاري الإنشاء...';
+
+  @override
+  String get chatIssueCategory => 'نوع المشكلة';
+
+  @override
+  String get chatRelatedOrderOptional => 'رقم الطلب المرتبط (اختياري)';
+
+  @override
+  String get chatRelatedOrderHint => 'مثال: 45821';
+
+  @override
+  String get chatStartTicket => 'بدء التذكرة';
+
+  @override
+  String get chatEmergencyHeader => 'تذكرة طوارئ';
+
+  @override
+  String get chatOrderProblem => 'مشكلة في طلب';
+
+  @override
+  String get chatDriverProblem => 'مشكلة مع السائق';
+
+  @override
+  String get chatRatingProblem => 'اعتراض على تقييم';
+
+  @override
+  String get chatTechProblem => 'خلل تقني';
+
+  @override
+  String get chatOtherProblem => 'أخرى';
+
+  @override
+  String get chatNoConversations => 'لا توجد محادثات بعد';
+
+  @override
+  String get chatNoConversationsBody =>
+      'ابدأ طلبًا جديدًا أو افتح تذكرة طارئة، وستظهر هنا كل المحادثات السابقة.';
+
+  @override
+  String get chatConversationsLoadError => 'تعذر تحميل المحادثات حاليًا';
+
+  @override
+  String get chatOpenNewOrder => 'طلب جديد';
+
+  @override
+  String get chatEmergencyTicketLabel => 'تذكرة طارئة';
+
+  @override
+  String get chatOrderRequestLabel => 'طلب جديد';
+
+  @override
+  String get chatAttachImage => 'صورة';
+
+  @override
+  String get chatSystemCreatedOrder => 'تم إنشاء محادثة طلب جديدة.';
+
+  @override
+  String get chatSystemCreatedIssue => 'تم إنشاء تذكرة طوارئ جديدة.';
+
+  @override
+  String get chatCreateConversationError => 'تعذر بدء المحادثة حاليًا';
+
+  @override
+  String get chatEmptyConversation => 'أرسل رسالة لبدء المحادثة';
+
+  @override
+  String get chatMessagesLoadError => 'تعذر تحميل الرسائل حاليًا';
+
+  @override
+  String get chatRelatedOrder => 'الطلب المرتبط';
+
+  @override
+  String get chatStatusOpen => 'مفتوح';
+
+  @override
+  String get chatStatusClosed => 'مُغلق';
+
+  @override
+  String get chatYou => 'أنت';
+
+  @override
+  String get chatAdmin => 'الدعم';
+
+  @override
+  String get chatImagePreview => '📷 صورة';
+
+  @override
+  String get chatConversationClosed => 'هذه المحادثة مغلقة';
 
   @override
   String get orderDescription => 'وصف الطلب';

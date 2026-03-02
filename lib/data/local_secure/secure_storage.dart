@@ -15,9 +15,10 @@ class SecureStorage {
   static const String _keyIsVerified = 'is_verified';
   static const String _keyLocale = 'app_locale';
   static const String _keyPushNotifications = 'push_notifications_enabled';
+  static const String _keyUserName = 'user_name';
 
   // Save access token
-  Future<void> persistenToken(String token) async {
+  Future<void> persistToken(String token) async {
     await _storage.write(key: _keyAccessToken, value: token);
   }
 
@@ -99,12 +100,12 @@ class SecureStorage {
   }
 
   // Additional helper methods
-  Future<void> persistenName(String name) async {
-    await _storage.write(key: 'user_name', value: name);
+  Future<void> persistName(String name) async {
+    await _storage.write(key: _keyUserName, value: name);
   }
 
   Future<String?> getName() async {
-    return await _storage.read(key: 'user_name');
+    return await _storage.read(key: _keyUserName);
   }
 
   Future<void> updateUserData({
@@ -123,10 +124,6 @@ class SecureStorage {
     }
   }
 
-  // ============================================
-  // Locale Methods
-  // ============================================
-
   /// Save locale preference
   Future<void> saveLocale(String languageCode) async {
     await _storage.write(key: _keyLocale, value: languageCode);
@@ -141,10 +138,6 @@ class SecureStorage {
   Future<void> clearLocale() async {
     await _storage.delete(key: _keyLocale);
   }
-
-  // ============================================
-  // Push Notifications Preference
-  // ============================================
 
   /// Save push notifications preference
   Future<void> savePushNotificationsEnabled(bool enabled) async {

@@ -11,16 +11,12 @@ import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/domain/models/menu_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/cart_detail_screen.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================================
-// RESTAURANT DETAIL SCREEN
-// ============================================================
 
 class RestaurantDetailScreen extends StatefulWidget {
   final String slug;
@@ -81,8 +77,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   bool get _isAuth => context.read<AuthBloc>().state is AuthAuthenticated;
   bool get _isAr => Localizations.localeOf(context).languageCode == 'ar';
 
-  // ── Data ──
-
   void _loadProducts(int rId, int cId) {
     context.read<MenuBloc>().add(
       MenuProductsLoadRequested(
@@ -110,8 +104,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       context.read<CartBloc>().add(CartLoadRequested(restaurantId: id));
     }
   }
-
-  // ── Cart actions ──
 
   void _addToCart(ProductSimpleMenu p) {
     if (!_isAuth) return _loginDialog();
@@ -198,8 +190,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
-  // ── Product detail bottom sheet ──
-
   void _showProductDetail(ProductSimpleMenu p) {
     showModalBottomSheet(
       context: context,
@@ -237,8 +227,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
-  // ── Back button ──
-
   Widget _buildBackButton() {
     return Align(
       alignment: AlignmentDirectional.centerStart,
@@ -260,8 +248,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       ),
     );
   }
-
-  // ── App bar ──
 
   Widget _buildAppBar(String name) {
     return Container(
@@ -296,10 +282,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -440,8 +422,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
-  // ── Menu (inside SingleChildScrollView) ──
-
   Widget _menuInline(AppLocalizations l10n, RestaurantDetail r) {
     return BlocBuilder<MenuBloc, MenuState>(
       builder: (_, s) {
@@ -548,8 +528,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
-  // ── Menu (fullscreen search mode) ──
-
   Widget _menuSection(AppLocalizations l10n, RestaurantDetail r) {
     return BlocBuilder<MenuBloc, MenuState>(
       builder: (_, s) {
@@ -647,10 +625,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 }
 
-// ============================================================
-// COVER WITH LOGO
-// ============================================================
-
 const double _kCoverH = 180.0;
 const double _kLogoSize = 56.0;
 const double _kLogoBorder = 3.0;
@@ -733,10 +707,6 @@ class _CoverWithLogo extends StatelessWidget {
   );
 }
 
-// ============================================================
-// RESTAURANT INFO CARD
-// ============================================================
-
 class _InfoCard extends StatelessWidget {
   final RestaurantDetail restaurant;
   final bool isArabic;
@@ -751,7 +721,6 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       child: Column(
         children: [
-          // ── Delivery info + status — single unified card ──
           Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
             decoration: BoxDecoration(
@@ -802,7 +771,6 @@ class _InfoCard extends StatelessWidget {
             ),
           ),
 
-          // ── Discount banner (only if active) ──
           if (restaurant.hasDiscount &&
               (restaurant.currentDiscount ?? 0) > 0) ...[
             const SizedBox(height: 10),
@@ -905,10 +873,6 @@ class _DeliveryItem extends StatelessWidget {
   }
 }
 
-// ============================================================
-// TAB BAR (Menu / Info)
-// ============================================================
-
 class _TabBar extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onChanged;
@@ -990,10 +954,6 @@ class _TabItem extends StatelessWidget {
   }
 }
 
-// ============================================================
-// CATEGORY CHIPS
-// ============================================================
-
 class _CatChips extends StatelessWidget {
   final List<MenuCategory> cats;
   final int idx;
@@ -1045,10 +1005,6 @@ class _CatChips extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// SEARCH FIELD
-// ============================================================
 
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
@@ -1114,10 +1070,6 @@ class _SearchField extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// PRODUCT CARD
-// ============================================================
 
 class _ProductCard extends StatelessWidget {
   final ProductSimpleMenu product;
@@ -1200,10 +1152,8 @@ class _ProductCard extends StatelessWidget {
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // ── Image ──
               _buildImage(img, imgBorderRadius, available, l10n),
 
-              // ── Content ──
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -1231,8 +1181,6 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
-
-  // ── Image section ──
 
   Widget _buildImage(
     String img,
@@ -1305,8 +1253,6 @@ class _ProductCard extends StatelessWidget {
     );
   }
 
-  // ── Header (name + badge) ──
-
   Widget _buildHeader(AppLocalizations l10n, bool available) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1341,8 +1287,6 @@ class _ProductCard extends StatelessWidget {
     );
   }
 
-  // ── Description ──
-
   Widget _buildDescription() {
     return TextCustom(
       text: _description!,
@@ -1352,8 +1296,6 @@ class _ProductCard extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     );
   }
-
-  // ── Footer (price + cart controls) ──
 
   Widget _buildFooter(AppLocalizations l10n, bool available) {
     return Row(
@@ -1395,8 +1337,6 @@ class _ProductCard extends StatelessWidget {
     );
   }
 
-  // ── Cart controls: + button or [ - count + ] ──
-
   Widget _buildCartControls() {
     if (loading) {
       return Container(
@@ -1430,8 +1370,6 @@ class _ProductCard extends StatelessWidget {
   }
 }
 
-// ── Add-to-cart button ──
-
 class _CartAddButton extends StatelessWidget {
   final VoidCallback onTap;
   const _CartAddButton({required this.onTap});
@@ -1452,8 +1390,6 @@ class _CartAddButton extends StatelessWidget {
     );
   }
 }
-
-// ── Quantity counter [ - count + ] ──
 
 class _QuantityCounter extends StatelessWidget {
   final int quantity;
@@ -1526,10 +1462,6 @@ class _QuantityCounter extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// INFO TAB
-// ============================================================
 
 class _InfoTab extends StatelessWidget {
   final RestaurantDetail restaurant;
@@ -1679,10 +1611,6 @@ class _HoursRow extends StatelessWidget {
   }
 }
 
-// ============================================================
-// FLOATING CART BAR
-// ============================================================
-
 class _CartBar extends StatelessWidget {
   final RestaurantDetail? restaurant;
   final VoidCallback onTap;
@@ -1763,10 +1691,6 @@ class _CartBar extends StatelessWidget {
   }
 }
 
-// ============================================================
-// LOGIN DIALOG
-// ============================================================
-
 class _LoginSheet extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onCancel;
@@ -1825,10 +1749,6 @@ class _LoginSheet extends StatelessWidget {
   }
 }
 
-// ============================================================
-// ERROR VIEW
-// ============================================================
-
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -1880,10 +1800,6 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ============================================================
-// EMPTY ICON
-// ============================================================
-
 class _EmptyIcon extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -1918,10 +1834,6 @@ class _EmptyIcon extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// PRODUCT DETAIL BOTTOM SHEET
-// ============================================================
 
 class _ProductDetailSheet extends StatelessWidget {
   final ProductSimpleMenu product;
@@ -1987,7 +1899,6 @@ class _ProductDetailSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Drag handle ──
           const SizedBox(height: 10),
           Container(
             width: 36,
@@ -1999,20 +1910,17 @@ class _ProductDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // ── Scrollable content ──
           Flexible(
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Image ──
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildImage(img, available),
                   ),
                   const SizedBox(height: 18),
 
-                  // ── Name + Price row ──
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -2054,7 +1962,6 @@ class _ProductDetailSheet extends StatelessWidget {
                     ),
                   ),
 
-                  // ── Old price + discount badge ──
                   if (_hasDiscount) ...[
                     const SizedBox(height: 8),
                     Padding(
@@ -2090,7 +1997,6 @@ class _ProductDetailSheet extends StatelessWidget {
                     ),
                   ],
 
-                  // ── Unavailable badge ──
                   if (!available) ...[
                     const SizedBox(height: 12),
                     Padding(
@@ -2125,7 +2031,6 @@ class _ProductDetailSheet extends StatelessWidget {
                     ),
                   ],
 
-                  // ── Description ──
                   if (_description != null) ...[
                     const SizedBox(height: 14),
                     Padding(
@@ -2143,7 +2048,6 @@ class _ProductDetailSheet extends StatelessWidget {
             ),
           ),
 
-          // ── Action bar ──
           if (available)
             BlocBuilder<CartBloc, CartState>(
               builder: (ctx, state) {
@@ -2174,8 +2078,6 @@ class _ProductDetailSheet extends StatelessWidget {
       ),
     );
   }
-
-  // ── Image ──
 
   Widget _buildImage(String img, bool available) {
     return ClipRRect(
@@ -2257,8 +2159,6 @@ class _ProductDetailSheet extends StatelessWidget {
       ),
     );
   }
-
-  // ── Action bar ──
 
   Widget _buildActionBar(AppLocalizations l10n, int qty, bool loading) {
     if (loading) {

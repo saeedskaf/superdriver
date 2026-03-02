@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -7,10 +8,6 @@ import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 
 class HomeServices {
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
   Future<Map<String, String>> _getHeaders({bool requiresAuth = false}) async {
     final headers = <String, String>{
       'Content-Type': 'application/json; charset=UTF-8',
@@ -39,7 +36,7 @@ class HomeServices {
       queryParameters: queryParams?.isNotEmpty == true ? queryParams : null,
     );
     final headers = await _getHeaders(requiresAuth: requiresAuth);
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     log('GET $uri → ${response.statusCode}: ${response.body}');
 
     if (response.statusCode == 200) return jsonDecode(response.body);
@@ -101,10 +98,6 @@ class HomeServices {
     }
   }
 
-  // ============================================================
-  // ENDPOINTS
-  // ============================================================
-
   /// Main home data: banners, categories, featured restaurants
   Future<HomeData> getHomeData({double? lat, double? lng}) async {
     final json = await _get(
@@ -158,7 +151,7 @@ class HomeServices {
     final headers = await _getHeaders(requiresAuth: true);
 
     try {
-      final response = await http.get(uri, headers: headers);
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
       log('GET reorder → ${response.statusCode}: ${response.body}');
 
       if ((response.headers['content-type'] ?? '').contains('text/html') ||

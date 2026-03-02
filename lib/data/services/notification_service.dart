@@ -1,4 +1,5 @@
-// lib/domain/services/notification_service.dart
+// lib/data/services/notification_service.dart
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -6,7 +7,7 @@ import 'package:superdriver/data/env/environment.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
 import 'package:superdriver/domain/models/notification_model.dart';
 
-class NotificationApiService {
+class NotificationService {
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await secureStorage.getAccessToken();
     return {
@@ -29,7 +30,7 @@ class NotificationApiService {
   Future<List<NotificationItem>> fetchNotifications() async {
     final uri = Uri.parse(Environment.notificationsEndpoint);
     final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Notifications list status: ${response.statusCode}');
     log('Notifications list response: ${response.body}');
@@ -54,7 +55,7 @@ class NotificationApiService {
   Future<NotificationDetail> fetchNotificationDetail(int id) async {
     final uri = Uri.parse(Environment.notificationDetailEndpoint(id));
     final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Notification detail: ${response.statusCode}');
 
@@ -69,7 +70,7 @@ class NotificationApiService {
   Future<void> markAsRead(int id) async {
     final uri = Uri.parse(Environment.notificationReadEndpoint(id));
     final headers = await _getAuthHeaders();
-    final response = await http.post(uri, headers: headers);
+    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Mark notification read: ${response.statusCode}');
 
@@ -82,7 +83,7 @@ class NotificationApiService {
   Future<void> markAllAsRead() async {
     final uri = Uri.parse(Environment.notificationsReadAllEndpoint);
     final headers = await _getAuthHeaders();
-    final response = await http.post(uri, headers: headers);
+    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Mark all read: ${response.statusCode}');
 
@@ -95,7 +96,7 @@ class NotificationApiService {
   Future<int> fetchUnreadCount() async {
     final uri = Uri.parse(Environment.notificationsUnreadCountEndpoint);
     final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
 
     log('Unread count: ${response.statusCode}');
 
@@ -123,7 +124,7 @@ class NotificationApiService {
       'language': language ?? 'ar',
     });
 
-    final response = await http.post(uri, headers: headers, body: body);
+    final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 30));
 
     log('Register device: ${response.statusCode}');
 
@@ -138,7 +139,7 @@ class NotificationApiService {
     final headers = await _getAuthHeaders();
     final body = jsonEncode({'token': token});
 
-    final response = await http.post(uri, headers: headers, body: body);
+    final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 30));
 
     log('Unregister device: ${response.statusCode}');
 
@@ -148,4 +149,4 @@ class NotificationApiService {
   }
 }
 
-final notificationApiService = NotificationApiService();
+final notificationService = NotificationService();

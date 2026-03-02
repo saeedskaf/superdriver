@@ -10,13 +10,9 @@ import 'package:http/http.dart' as http;
 import 'package:superdriver/domain/bloc/address/address_bloc.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/profile/addresses_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================================
-// DATA MODELS
-// ============================================================
 
 enum DeliveryLocationType { savedAddress, currentLocation, searchedLocation }
 
@@ -42,8 +38,6 @@ class DeliveryLocationResult {
   });
 
   bool get hasCoordinates => latitude != null && longitude != null;
-
-  // ---- Factories ----
 
   factory DeliveryLocationResult.fromCurrentLocation(CurrentLocationData data) {
     final subtitle =
@@ -129,13 +123,7 @@ class SearchedLocationData {
   });
 }
 
-// ============================================================
-// LOCATION HELPERS
-// ============================================================
-
-/// Try to get the device's current GPS location as a [DeliveryLocationResult].
-/// Returns null when permissions are denied or the service is unavailable.
-Future<DeliveryLocationResult?> getCurrentLocationAsDefault() async {
+Future<DeliveryLocationResult?> getCurrentLocationAsDefault({required String fallbackLocationName}) async {
   try {
     if (!await Geolocator.isLocationServiceEnabled()) return null;
 
@@ -153,7 +141,7 @@ Future<DeliveryLocationResult?> getCurrentLocationAsDefault() async {
       timeLimit: const Duration(seconds: 10),
     );
 
-    final geo = await _reverseGeocode(position.latitude, position.longitude);
+    final geo = await _reverseGeocode(position.latitude, position.longitude, fallbackName: fallbackLocationName);
 
     return DeliveryLocationResult.fromCurrentLocation(
       CurrentLocationData(
@@ -175,37 +163,32 @@ class _GeoResult {
   final String? area;
   final String? city;
 
-  const _GeoResult({this.shortName = 'Current Location', this.area, this.city});
+  const _GeoResult({required this.shortName, this.area, this.city});
 }
 
-Future<_GeoResult> _reverseGeocode(double lat, double lng) async {
+Future<_GeoResult> _reverseGeocode(double lat, double lng, {required String fallbackName}) async {
   try {
     final placemarks = await placemarkFromCoordinates(lat, lng);
-    if (placemarks.isEmpty) return const _GeoResult();
+    if (placemarks.isEmpty) return _GeoResult(shortName: fallbackName);
 
     final p = placemarks.first;
     final area = p.subLocality?.isNotEmpty == true ? p.subLocality : null;
     final city = p.locality?.isNotEmpty == true ? p.locality : null;
 
     return _GeoResult(
-      shortName: area ?? city ?? 'Current Location',
+      shortName: area ?? city ?? fallbackName,
       area: area,
       city: city,
     );
   } catch (_) {
-    return const _GeoResult();
+    return _GeoResult(shortName: fallbackName);
   }
 }
-
-// ============================================================
-// LOCATION SEARCH SERVICE
-// ============================================================
 
 class LocationSearchService {
   static const _userAgent = 'SuperDriverApp/1.0';
   static const _timeout = Duration(seconds: 10);
 
-  /// Run parallel searches and return de-duplicated results.
   static Future<List<SearchedLocationData>> search(String query) async {
     if (query.length < 2) return [];
 
@@ -222,8 +205,6 @@ class LocationSearchService {
 
     return _deduplicate(results);
   }
-
-  // ---- Nominatim ----
 
   static Future<void> _searchNominatim(
     String query,
@@ -290,8 +271,6 @@ class LocationSearchService {
     }
   }
 
-  // ---- Geocoding fallback ----
-
   static Future<void> _searchGeocoding(
     String query,
     List<SearchedLocationData> out,
@@ -321,8 +300,6 @@ class LocationSearchService {
       }
     } catch (_) {}
   }
-
-  // ---- Helpers ----
 
   static String _extractName(
     Map<String, dynamic> item,
@@ -401,10 +378,6 @@ class LocationSearchService {
   }
 }
 
-// ============================================================
-// PUBLIC API
-// ============================================================
-
 Future<void> showAddressSelector(
   BuildContext context, {
   DeliveryLocationResult? currentLocation,
@@ -425,10 +398,6 @@ Future<void> showAddressSelector(
     ),
   );
 }
-
-// ============================================================
-// ADDRESS SELECTOR SHEET
-// ============================================================
 
 class _AddressSelectorSheet extends StatefulWidget {
   final DeliveryLocationResult? currentSelected;
@@ -474,8 +443,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
     _debounce?.cancel();
     super.dispose();
   }
-
-  // ---- Search ----
 
   void _onSearchChanged() {
     final query = _searchCtrl.text.trim();
@@ -525,8 +492,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
     }
   }
 
-  // ---- GPS ----
-
   Future<void> _useCurrentLocation() async {
     setState(() {
       _loadingGps = true;
@@ -555,7 +520,7 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 15),
       );
-      final geo = await _reverseGeocode(pos.latitude, pos.longitude);
+      final geo = await _reverseGeocode(pos.latitude, pos.longitude, fallbackName: l10n.currentLocation);
 
       if (!mounted) return;
       Navigator.pop(context);
@@ -583,8 +548,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
     });
   }
 
-  // ---- Selection ----
-
   void _selectSaved(AddressSummary address) {
     Navigator.pop(context);
     widget.onSelected(DeliveryLocationResult.fromSavedAddress(address));
@@ -602,8 +565,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
       MaterialPageRoute(builder: (_) => const AddressesScreen()),
     );
   }
-
-  // ---- Build ----
 
   @override
   Widget build(BuildContext context) {
@@ -627,8 +588,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
     );
   }
 
-  // ---- Handle ----
-
   Widget _buildHandle() {
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -640,8 +599,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
       ),
     );
   }
-
-  // ---- Header ----
 
   Widget _buildHeader(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -678,8 +635,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
       ),
     );
   }
-
-  // ---- Search field ----
 
   Widget _buildSearchField(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -733,8 +688,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
       ),
     );
   }
-
-  // ---- Search results ----
 
   Widget _buildSearchResults() {
     if (_loadingSearch) {
@@ -806,8 +759,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
       ),
     );
   }
-
-  // ---- Main content (GPS + saved) ----
 
   Widget _buildMainContent() {
     final isGpsSelected =
@@ -975,10 +926,6 @@ class _AddressSelectorSheetState extends State<_AddressSelectorSheet> {
     );
   }
 }
-
-// ============================================================
-// TILE WIDGETS
-// ============================================================
 
 class _CurrentLocationTile extends StatelessWidget {
   final bool isLoading;
@@ -1242,8 +1189,6 @@ class _SavedAddressTile extends StatelessWidget {
     return Icons.location_on_outlined;
   }
 }
-
-// ---- Shared selection indicator ----
 
 Widget _selectionIndicator(bool isSelected, bool isLoading) {
   if (isSelected) {

@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 
 class ColorsCustom {
@@ -12,10 +10,10 @@ class ColorsCustom {
   static const Color primarySoft = Color(0xFFFCF8F8); // #FCF8F8
 
   // Secondary (Gold)
-  static const Color secondary = Color(0xFFD4AF37); // #D4AF37
+  static const Color secondary = Color(0xFFB8902E); // unified gold
   static const Color secondaryDark = Color(0xFFB8902E); // #B8902E
-  static const Color secondaryLight = Color(0xFFF5E6B3); // #F5E6B3
-  static const Color secondarySoft = Color(0xFFFBF3CF); // #FBF3CF
+  static const Color secondaryLight = Color(0x14B8902E); // 8% tint
+  static const Color secondarySoft = Color(0x14B8902E); // 8% tint
 
   // Surfaces
   static const Color background = primarySoft; // #FCF8F8
@@ -34,8 +32,8 @@ class ColorsCustom {
   static const Color error = Color(0xFFD32F2F); // #D32F2F
   static const Color errorBg = Color(0xFFFDECEA); // #FDECEA
 
-  static const Color warning = Color(0xFFB8902E); // #B8902E
-  static const Color warningBg = Color(0xFFFFF8E1); // #FFF8E1
+  static const Color warning = Color(0xFFB8902E); // alias to unified gold
+  static const Color warningBg = Color(0x14B8902E); // alias to unified gold bg
 
   static const Color success = Color(0xFF2E7D32); // #2E7D32
   static const Color successBg = Color(0xFFE8F5E9); // #E8F5E9
@@ -43,7 +41,7 @@ class ColorsCustom {
   // Shadows
   static final shadowSm = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: const Color(0xFF000000).withAlpha(13),
       blurRadius: 4,
       offset: const Offset(0, 1),
     ),
@@ -51,7 +49,7 @@ class ColorsCustom {
 
   static final shadowMd = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: const Color(0xFF000000).withAlpha(20),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),

@@ -122,9 +122,9 @@ class Order {
       addressSnapshot: json['address_snapshot'] != null
           ? AddressSnapshot.fromJson(json['address_snapshot'])
           : null,
-      itemsSnapshot: json['items_snapshot'] != null
-          ? (json['items_snapshot'] as List)
-                .map((item) => ItemSnapshot.fromJson(item))
+      itemsSnapshot: json['items_snapshot'] != null && json['items_snapshot'] is List
+          ? (json['items_snapshot'] as List<dynamic>)
+                .map((item) => ItemSnapshot.fromJson(item as Map<String, dynamic>))
                 .toList()
           : null,
       notes: json['notes'],
@@ -152,8 +152,8 @@ class Order {
       trackingInfo: json['tracking_info'] != null
           ? TrackingInfo.fromJson(json['tracking_info'])
           : null,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -545,7 +545,7 @@ class OrderStatusHistory {
       changedBy: json['changed_by'],
       changedByName: json['changed_by_name'],
       notes: json['notes'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 }
@@ -604,7 +604,7 @@ class OrderListItem {
       scheduledDeliveryTime: json['scheduled_delivery_time'] != null
           ? DateTime.tryParse(json['scheduled_delivery_time'])
           : null,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
       placedAt: json['placed_at'] != null
           ? DateTime.tryParse(json['placed_at'])
           : null,

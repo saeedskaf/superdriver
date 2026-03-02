@@ -11,10 +11,6 @@ double _parseDouble(dynamic value) {
   return 0.0;
 }
 
-// ============================================================
-// RESTAURANT CATEGORY ITEM (new — for categories_data list)
-// ============================================================
-
 class RestaurantCategoryItem extends Equatable {
   final int category;
   final String categoryName;
@@ -45,10 +41,6 @@ class RestaurantCategoryItem extends Equatable {
   @override
   List<Object?> get props => [category, categoryName, categoryNameEn];
 }
-
-// ============================================================
-// RESTAURANT DETAIL (full info with working hours)
-// ============================================================
 
 class RestaurantDetail extends Equatable {
   final int id;
@@ -245,10 +237,6 @@ class RestaurantDetail extends Equatable {
   ];
 }
 
-// ============================================================
-// WORKING HOURS
-// ============================================================
-
 class WorkingHours extends Equatable {
   final int id;
   final int day;
@@ -298,10 +286,6 @@ class WorkingHours extends Equatable {
     isClosed,
   ];
 }
-
-// ============================================================
-// RESTAURANT CATEGORY (for /restaurants/categories/ endpoint)
-// ============================================================
 
 class RestaurantCategory extends Equatable {
   final int id;
@@ -367,10 +351,6 @@ class RestaurantCategory extends Equatable {
     restaurantsCount,
   ];
 }
-
-// ============================================================
-// RESTAURANT LIST ITEM (simplified for lists)
-// ============================================================
 
 class RestaurantListItem extends Equatable {
   final int id;
@@ -514,10 +494,6 @@ class RestaurantListItem extends Equatable {
     isFeatured,
   ];
 }
-
-// ============================================================
-// RESTAURANT FILTER PARAMS
-// ============================================================
 
 class RestaurantFilterParams extends Equatable {
   final int? categoryId;

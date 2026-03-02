@@ -10,10 +10,6 @@ double _parseDouble(dynamic value) {
   return 0.0;
 }
 
-// ============================================================
-// BANNER
-// ============================================================
-
 class Banner extends Equatable {
   final int id;
   final String title;
@@ -56,12 +52,8 @@ class Banner extends Equatable {
   );
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [id, title, titleEn, subtitle, subtitleEn, image, bannerType, link, isActive, isCurrentlyActive, order];
 }
-
-// ============================================================
-// CATEGORY
-// ============================================================
 
 class Category extends Equatable {
   final int id;
@@ -99,12 +91,8 @@ class Category extends Equatable {
   );
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [id, name, nameEn, slug, icon, image, isActive, order, restaurantsCount];
 }
-
-// ============================================================
-// HOME DATA (main /api/home/ response)
-// ============================================================
 
 class HomeData extends Equatable {
   final List<Banner> banners;
@@ -150,10 +138,6 @@ class HomeData extends Equatable {
     newRestaurants,
   ];
 }
-
-// ============================================================
-// REORDER
-// ============================================================
 
 class ReorderItem extends Equatable {
   final int orderId;

@@ -7,12 +7,11 @@ abstract class MenuState extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Initial state
 class MenuInitial extends MenuState {
   const MenuInitial();
 }
 
-// ==================== Menu Categories States ====================
+// --- Categories ---
 
 class MenuCategoriesLoading extends MenuState {
   const MenuCategoriesLoading();
@@ -40,7 +39,7 @@ class MenuCategoriesError extends MenuState {
   List<Object?> get props => [message];
 }
 
-// ==================== Menu Products States ====================
+// --- Products ---
 
 class MenuProductsLoading extends MenuState {
   const MenuProductsLoading();
@@ -68,7 +67,7 @@ class MenuProductsError extends MenuState {
   List<Object?> get props => [message];
 }
 
-// ==================== Product Details States ====================
+// --- Product Details ---
 
 class MenuProductDetailsLoading extends MenuState {
   const MenuProductDetailsLoading();
@@ -92,7 +91,7 @@ class MenuProductDetailsError extends MenuState {
   List<Object?> get props => [message];
 }
 
-// ==================== Deals States ====================
+// --- Deals ---
 
 class MenuDealsLoading extends MenuState {
   const MenuDealsLoading();
@@ -120,7 +119,7 @@ class MenuDealsError extends MenuState {
   List<Object?> get props => [message];
 }
 
-// ==================== Featured Products States ====================
+// --- Featured ---
 
 class MenuFeaturedLoading extends MenuState {
   const MenuFeaturedLoading();
@@ -148,7 +147,7 @@ class MenuFeaturedError extends MenuState {
   List<Object?> get props => [message];
 }
 
-// ==================== Popular Products States ====================
+// --- Popular ---
 
 class MenuPopularLoading extends MenuState {
   const MenuPopularLoading();

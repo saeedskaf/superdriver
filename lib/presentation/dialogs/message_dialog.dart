@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class ShowMessage {

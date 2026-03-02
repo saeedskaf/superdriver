@@ -8,9 +8,8 @@ class FormValidators {
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
-  // ==================== Authentication Validators ====================
+  // --- auth ---
 
-  // Phone number validator (primary login method)
   String? phoneValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.phoneRequired;
@@ -29,7 +28,6 @@ class FormValidators {
     return null;
   }
 
-  // Password validator
   String? passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.passwordRequired;
@@ -40,7 +38,6 @@ class FormValidators {
     return null;
   }
 
-  // Password match validator (for confirm password)
   String? passwordMatchValidator(String password, String? value) {
     if (value == null || value.isEmpty) {
       return l10n.confirmPasswordRequired;
@@ -51,7 +48,6 @@ class FormValidators {
     return null;
   }
 
-  // First name validator
   String? firstNameValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.firstNameRequired;
@@ -65,7 +61,6 @@ class FormValidators {
     return null;
   }
 
-  // Last name validator
   String? lastNameValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.lastNameRequired;
@@ -79,7 +74,6 @@ class FormValidators {
     return null;
   }
 
-  // OTP validator (6 digits)
   String? otpValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.otpRequired;
@@ -93,9 +87,8 @@ class FormValidators {
     return null;
   }
 
-  // ==================== Order Validators ====================
+  // --- orders ---
 
-  // Order description/request validator
   String? orderDescriptionValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.orderDescriptionRequired;
@@ -109,7 +102,6 @@ class FormValidators {
     return null;
   }
 
-  // Delivery address validator
   String? deliveryAddressValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.deliveryAddressRequired;
@@ -123,7 +115,6 @@ class FormValidators {
     return null;
   }
 
-  // Optional delivery notes validator
   String? deliveryNotesValidator(String? value) {
     if (value != null && value.length > 500) {
       return l10n.notesTooLong;
@@ -131,9 +122,8 @@ class FormValidators {
     return null;
   }
 
-  // ==================== Chat & Support Validators ====================
+  // --- chat & support ---
 
-  // Chat message validator
   String? chatMessageValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.chatMessageRequired;
@@ -147,7 +137,6 @@ class FormValidators {
     return null;
   }
 
-  // Support ticket title validator
   String? ticketTitleValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.ticketTitleRequired;
@@ -161,7 +150,6 @@ class FormValidators {
     return null;
   }
 
-  // Support ticket description validator
   String? ticketDescriptionValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.ticketDescriptionRequired;
@@ -175,9 +163,8 @@ class FormValidators {
     return null;
   }
 
-  // ==================== General Validators ====================
+  // --- general ---
 
-  // Required field validator (generic)
   String? requiredValidator(String? value) {
     if (value == null || value.isEmpty) {
       return l10n.fieldRequired;
@@ -188,7 +175,6 @@ class FormValidators {
     return null;
   }
 
-  // Optional notes validator (generic)
   String? notesValidator(String? value) {
     if (value != null && value.length > 500) {
       return l10n.notesTooLong;
@@ -196,7 +182,6 @@ class FormValidators {
     return null;
   }
 
-  // Email validator (optional - for future use if needed)
   String? emailValidator(String? value) {
     if (value == null || value.isEmpty) {
       return null; // Email is optional
@@ -210,9 +195,8 @@ class FormValidators {
     return null;
   }
 
-  // ==================== Helper Methods ====================
+  // --- helpers ---
 
-  // Combine validators (chain multiple validators)
   String? Function(String?) combineValidators(
     List<String? Function(String?)> validators,
   ) {

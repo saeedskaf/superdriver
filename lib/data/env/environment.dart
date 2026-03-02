@@ -1,5 +1,8 @@
 class Environment {
-  static const String baseUrl = "https://delivery.hamzaekhwan.com";
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'https://dashboard.superdriverapp.com',
+  );
 
   // Auth endpoints
   static const String loginEndpoint = "$baseUrl/api/auth/login/";

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -35,7 +36,7 @@ class ProfileService {
     final uri = Uri.parse(Environment.profileEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     final responseBody = jsonDecode(response.body);
     log('GET Profile Response: $responseBody');
 
@@ -67,7 +68,7 @@ class ProfileService {
       uri,
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     final responseBody = jsonDecode(response.body);
     log('PATCH Profile Response: $responseBody');
@@ -109,7 +110,7 @@ class ProfileService {
         'new_password': newPassword,
         'confirm_password': confirmPassword,
       }),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     log('Change Password Response Status: ${response.statusCode}');
 

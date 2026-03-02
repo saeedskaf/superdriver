@@ -6,10 +6,10 @@ import 'package:superdriver/domain/bloc/notification/notification_bloc.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/models/notification_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-import 'package:superdriver/domain/services/notification_service.dart';
+import 'package:superdriver/data/services/notification_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -191,7 +191,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
 
-      final detail = await notificationApiService.fetchNotificationDetail(
+      final detail = await notificationService.fetchNotificationDetail(
         notificationId,
       );
 
@@ -340,10 +340,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 }
-
-// ============================================
-// NOTIFICATION TILE
-// ============================================
 
 class _NotificationTile extends StatelessWidget {
   final NotificationItem notification;

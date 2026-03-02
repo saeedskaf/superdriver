@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
-import 'package:superdriver/domain/services/restaurant_services.dart';
+import 'package:superdriver/data/services/restaurant_service.dart';
 
 part 'restaurant_event.dart';
 part 'restaurant_state.dart';
@@ -30,10 +30,6 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
   RestaurantDetail? get currentRestaurant => _currentRestaurant;
   RestaurantFilterParams? get currentFilters => _currentFilters;
 
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
   /// Emit the appropriate state for a restaurant list result.
   /// Handles loaded, empty, and search-empty states.
   void _emitForList(
@@ -59,10 +55,6 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
   String _formatError(dynamic error) {
     return error.toString().replaceAll('Exception: ', '');
   }
-
-  // ============================================================
-  // EVENT HANDLERS
-  // ============================================================
 
   Future<void> _onRestaurantsLoadRequested(
     RestaurantsLoadRequested event,
@@ -106,12 +98,13 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
   ) async {
     emit(const RestaurantDetailsLoading());
     try {
-      _currentRestaurant = await restaurantServices.getRestaurantDetails(
+      final restaurant = await restaurantServices.getRestaurantDetails(
         event.slug,
         lat: event.lat,
         lng: event.lng,
       );
-      emit(RestaurantDetailsLoaded(restaurant: _currentRestaurant!));
+      _currentRestaurant = restaurant;
+      emit(RestaurantDetailsLoaded(restaurant: restaurant));
     } catch (e) {
       log('RestaurantBloc: Error loading details: $e');
       emit(RestaurantDetailsError(_formatError(e)));
@@ -124,8 +117,9 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
   ) async {
     emit(const CategoriesLoading());
     try {
-      _categories = await restaurantServices.getCategories();
-      emit(CategoriesLoaded(categories: _categories!));
+      final categories = await restaurantServices.getCategories();
+      _categories = categories;
+      emit(CategoriesLoaded(categories: categories));
     } catch (e) {
       log('RestaurantBloc: Error loading categories: $e');
       emit(CategoriesError(_formatError(e)));

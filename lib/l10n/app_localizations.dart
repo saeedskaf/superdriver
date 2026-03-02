@@ -3158,11 +3158,77 @@ abstract class AppLocalizations {
   /// **'Send'**
   String get chatSend;
 
+  /// No description provided for @chatPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'As You Wish'**
+  String get chatPageTitle;
+
   /// No description provided for @chatImageSendError.
   ///
   /// In en, this message translates to:
   /// **'Failed to send image'**
   String get chatImageSendError;
+
+  /// No description provided for @chatSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in again to access chat'**
+  String get chatSessionUnavailable;
+
+  /// No description provided for @chatLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get chatLocation;
+
+  /// No description provided for @chatPickLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick delivery location'**
+  String get chatPickLocation;
+
+  /// No description provided for @chatSavedAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved addresses'**
+  String get chatSavedAddresses;
+
+  /// No description provided for @chatCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Current location'**
+  String get chatCurrentLocation;
+
+  /// No description provided for @chatPickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get chatPickOnMap;
+
+  /// No description provided for @chatDeliveryAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery address'**
+  String get chatDeliveryAddress;
+
+  /// No description provided for @chatLocationSendError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send location'**
+  String get chatLocationSendError;
+
+  /// No description provided for @chatNoSavedAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved addresses'**
+  String get chatNoSavedAddresses;
+
+  /// No description provided for @chatDetectingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting location...'**
+  String get chatDetectingLocation;
 
   /// No description provided for @chatMessage.
   ///
@@ -3181,6 +3247,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Message is too long'**
   String get chatMessageTooLong;
+
+  /// No description provided for @chatNewOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat order'**
+  String get chatNewOrderTitle;
+
+  /// No description provided for @chatNewOrderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a saved address first, then start chatting with the admin to create the order.'**
+  String get chatNewOrderSubtitle;
+
+  /// No description provided for @chatSelectAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a saved address'**
+  String get chatSelectAddress;
+
+  /// No description provided for @chatNoAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved addresses'**
+  String get chatNoAddresses;
+
+  /// No description provided for @chatNoAddressesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an address from your profile first so you can create a new order in chat.'**
+  String get chatNoAddressesBody;
+
+  /// No description provided for @chatAddAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Add address'**
+  String get chatAddAddress;
+
+  /// No description provided for @chatManageAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get chatManageAddresses;
+
+  /// No description provided for @chatEmergencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency or issue'**
+  String get chatEmergencyTitle;
+
+  /// No description provided for @chatEmergencySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Need help? Open a ticket for driver or order issues, rating disputes, or emergencies.'**
+  String get chatEmergencySubtitle;
+
+  /// No description provided for @chatOpenTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Open ticket'**
+  String get chatOpenTicket;
+
+  /// No description provided for @chatCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating...'**
+  String get chatCreating;
+
+  /// No description provided for @chatIssueCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue category'**
+  String get chatIssueCategory;
+
+  /// No description provided for @chatRelatedOrderOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Related order ID (optional)'**
+  String get chatRelatedOrderOptional;
+
+  /// No description provided for @chatRelatedOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: 45821'**
+  String get chatRelatedOrderHint;
+
+  /// No description provided for @chatStartTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Start ticket'**
+  String get chatStartTicket;
+
+  /// No description provided for @chatEmergencyHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency ticket'**
+  String get chatEmergencyHeader;
+
+  /// No description provided for @chatOrderProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Order problem'**
+  String get chatOrderProblem;
+
+  /// No description provided for @chatDriverProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver issue'**
+  String get chatDriverProblem;
+
+  /// No description provided for @chatRatingProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating dispute'**
+  String get chatRatingProblem;
+
+  /// No description provided for @chatTechProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical issue'**
+  String get chatTechProblem;
+
+  /// No description provided for @chatOtherProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get chatOtherProblem;
+
+  /// No description provided for @chatNoConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatNoConversations;
+
+  /// No description provided for @chatNoConversationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new order or open an emergency ticket, and all past conversations will appear here.'**
+  String get chatNoConversationsBody;
+
+  /// No description provided for @chatConversationsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load conversations right now'**
+  String get chatConversationsLoadError;
+
+  /// No description provided for @chatOpenNewOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'New order'**
+  String get chatOpenNewOrder;
+
+  /// No description provided for @chatEmergencyTicketLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency ticket'**
+  String get chatEmergencyTicketLabel;
+
+  /// No description provided for @chatOrderRequestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order request'**
+  String get chatOrderRequestLabel;
+
+  /// No description provided for @chatAttachImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get chatAttachImage;
+
+  /// No description provided for @chatSystemCreatedOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'New order conversation created.'**
+  String get chatSystemCreatedOrder;
+
+  /// No description provided for @chatSystemCreatedIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'New emergency ticket created.'**
+  String get chatSystemCreatedIssue;
+
+  /// No description provided for @chatCreateConversationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to start the conversation right now'**
+  String get chatCreateConversationError;
+
+  /// No description provided for @chatEmptyConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message to start the conversation'**
+  String get chatEmptyConversation;
+
+  /// No description provided for @chatMessagesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load messages right now'**
+  String get chatMessagesLoadError;
+
+  /// No description provided for @chatRelatedOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Related order'**
+  String get chatRelatedOrder;
+
+  /// No description provided for @chatStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get chatStatusOpen;
+
+  /// No description provided for @chatStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get chatStatusClosed;
+
+  /// No description provided for @chatYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatYou;
+
+  /// No description provided for @chatAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get chatAdmin;
+
+  /// No description provided for @chatImagePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'📷 Image'**
+  String get chatImagePreview;
+
+  /// No description provided for @chatConversationClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is closed'**
+  String get chatConversationClosed;
 
   /// No description provided for @orderDescription.
   ///

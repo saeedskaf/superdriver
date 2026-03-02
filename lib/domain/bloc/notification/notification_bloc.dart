@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/notification_model.dart';
-import 'package:superdriver/domain/services/notification_service.dart';
+import 'package:superdriver/data/services/notification_service.dart';
 
 part 'notification_event.dart';
 part 'notification_state.dart';
@@ -28,8 +28,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     emit(NotificationLoading(unreadCount: _unreadCount));
     try {
       final results = await Future.wait([
-        notificationApiService.fetchNotifications(),
-        notificationApiService.fetchUnreadCount(),
+        notificationService.fetchNotifications(),
+        notificationService.fetchUnreadCount(),
       ]);
 
       _notifications = results[0] as List<NotificationItem>;
@@ -57,26 +57,13 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     Emitter<NotificationState> emit,
   ) async {
     try {
-      _unreadCount = await notificationApiService.fetchUnreadCount();
-
-      if (_notifications.isNotEmpty) {
-        emit(
-          NotificationsLoaded(
-            notifications: _notifications,
-            unreadCount: _unreadCount,
-          ),
-        );
-      } else {
-        emit(const NotificationInitial());
-        // Re-emit with count via a trick: use loading then reset
-        emit(NotificationLoading(unreadCount: _unreadCount));
-        emit(
-          NotificationsLoaded(
-            notifications: _notifications,
-            unreadCount: _unreadCount,
-          ),
-        );
-      }
+      _unreadCount = await notificationService.fetchUnreadCount();
+      emit(
+        NotificationsLoaded(
+          notifications: _notifications,
+          unreadCount: _unreadCount,
+        ),
+      );
     } catch (e) {
       log('NotificationBloc unread count error: $e');
     }
@@ -87,7 +74,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     Emitter<NotificationState> emit,
   ) async {
     try {
-      await notificationApiService.markAsRead(event.notificationId);
+      await notificationService.markAsRead(event.notificationId);
 
       // Update local state
       _notifications = _notifications.map((n) {
@@ -115,6 +102,13 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       );
     } catch (e) {
       log('NotificationBloc markAsRead error: $e');
+      // Re-emit current state so UI stays consistent
+      emit(
+        NotificationsLoaded(
+          notifications: _notifications,
+          unreadCount: _unreadCount,
+        ),
+      );
     }
   }
 
@@ -123,7 +117,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     Emitter<NotificationState> emit,
   ) async {
     try {
-      await notificationApiService.markAllAsRead();
+      await notificationService.markAllAsRead();
 
       _unreadCount = 0;
       _notifications = _notifications
@@ -144,6 +138,12 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       emit(NotificationsLoaded(notifications: _notifications, unreadCount: 0));
     } catch (e) {
       log('NotificationBloc markAllAsRead error: $e');
+      emit(
+        NotificationError(
+          e.toString().replaceAll('Exception: ', ''),
+          unreadCount: _unreadCount,
+        ),
+      );
     }
   }
 

@@ -15,9 +15,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: ColorsCustom.primary,
       scaffoldBackgroundColor: ColorsCustom.background,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: ColorsCustom.primary,
         secondary: ColorsCustom.secondary,
         tertiary: ColorsCustom.secondaryLight,

@@ -4,12 +4,8 @@ import 'package:superdriver/data/env/environment.dart';
 import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================================
-// LOCALIZATION HELPERS
-// ============================================================
 
 String getLocaleCode(BuildContext context) =>
     Localizations.localeOf(context).languageCode;
@@ -40,10 +36,6 @@ String getLocalizedDescription(
   return description ?? descriptionEn ?? '';
 }
 
-// ============================================================
-// IMAGE HELPERS
-// ============================================================
-
 String getFullImageUrl(String? imagePath) {
   if (imagePath == null || imagePath.isEmpty) return '';
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -54,10 +46,6 @@ String getFullImageUrl(String? imagePath) {
       : imagePath;
   return '${Environment.baseUrl}/$cleanPath';
 }
-
-// ============================================================
-// NETWORK IMAGE
-// ============================================================
 
 class NetworkImg extends StatelessWidget {
   final String? url;
@@ -103,10 +91,6 @@ class NetworkImg extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// SECTION HEADER
-// ============================================================
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -158,9 +142,6 @@ class SectionHeader extends StatelessWidget {
                     color: ColorsCustom.primary,
                   ),
                   const SizedBox(width: 4),
-                  // Arrow always points forward (>)
-                  // Arabic: > points left visually (correct for RTL)
-                  // English: > points right visually (correct for LTR)
                   const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 12,
@@ -175,10 +156,6 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
-// SECTION DIVIDER
-// ============================================================
-
 class SectionDivider extends StatelessWidget {
   const SectionDivider({super.key});
 
@@ -187,14 +164,10 @@ class SectionDivider extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       height: 1,
-      color: ColorsCustom.border, // #E0E0E0
+      color: ColorsCustom.border,
     );
   }
 }
-
-// ============================================================
-// CATEGORY CARD
-// ============================================================
 
 class CategoryCard extends StatelessWidget {
   final Category category;
@@ -275,8 +248,7 @@ const double _kLogoHalf = _kLogoSz / 2;
 const double _kLogoInset = 14.0;
 const double _kContentH = 85.0;
 
-/// Exported so sections can reference it for ListView height.
-const double kRestaurantCardH = _kCoverH + _kContentH; // 210
+const double kRestaurantCardH = _kCoverH + _kContentH;
 
 class RestaurantCard extends StatelessWidget {
   final RestaurantListItem restaurant;
@@ -325,14 +297,12 @@ class RestaurantCard extends StatelessWidget {
           ],
         ),
         child: Stack(
-          clipBehavior: Clip.none, // logo overflows — must not clip
+          clipBehavior: Clip.none,
           children: [
-            // ── Card body (clipped for rounded corners) ──
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Column(
                 children: [
-                  // Cover image
                   _CardCover(
                     coverUrl: coverUrl,
                     isClosed: isClosed,
@@ -341,7 +311,6 @@ class RestaurantCard extends StatelessWidget {
                     isFreeDelivery: restaurant.isFreeDelivery,
                     l10n: l10n,
                   ),
-                  // Content area (fills remaining height)
                   Expanded(
                     child: Container(
                       width: double.infinity,
@@ -355,7 +324,6 @@ class RestaurantCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Name
                           TextCustom(
                             text: name,
                             maxLines: 1,
@@ -366,7 +334,6 @@ class RestaurantCard extends StatelessWidget {
                           ),
 
                           const Spacer(),
-                          // Delivery info row
                           _DeliveryRow(restaurant: restaurant, l10n: l10n),
                         ],
                       ),
@@ -376,7 +343,6 @@ class RestaurantCard extends StatelessWidget {
               ),
             ),
 
-            // ── Overlapping logo (outside ClipRRect so it's not clipped) ──
             PositionedDirectional(
               end: _kLogoInset,
               top: _kCoverH - _kLogoHalf,
@@ -391,10 +357,6 @@ class RestaurantCard extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// COVER IMAGE — tags for discount + free delivery only
-// ============================================================
 
 class _CardCover extends StatelessWidget {
   final String coverUrl;
@@ -423,7 +385,6 @@ class _CardCover extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Image (grayscale when closed)
           ColorFiltered(
             colorFilter: isClosed
                 ? const ColorFilter.matrix(<double>[
@@ -455,7 +416,6 @@ class _CardCover extends StatelessWidget {
             child: NetworkImg(url: coverUrl, height: _kCoverH),
           ),
 
-          // Bottom gradient
           Positioned(
             left: 0,
             right: 0,
@@ -472,7 +432,6 @@ class _CardCover extends StatelessWidget {
             ),
           ),
 
-          // Tags (top-start corner)
           if (hasTags)
             PositionedDirectional(
               top: 10,
@@ -504,10 +463,6 @@ class _CardCover extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// TAG CHIP
-// ============================================================
 
 class _TagChip extends StatelessWidget {
   final String label;
@@ -549,11 +504,6 @@ class _TagChip extends StatelessWidget {
   }
 }
 
-// ============================================================
-// DELIVERY ROW — preparation time + delivery fee (dot separated)
-// Free delivery is NOT repeated here (shown as tag on cover).
-// ============================================================
-
 class _DeliveryRow extends StatelessWidget {
   final RestaurantListItem restaurant;
   final AppLocalizations l10n;
@@ -571,7 +521,6 @@ class _DeliveryRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Preparation time
         if (hasTime) ...[
           const Icon(
             Icons.schedule_rounded,
@@ -587,7 +536,6 @@ class _DeliveryRow extends StatelessWidget {
           ),
         ],
 
-        // Dot separator
         if (hasTime && showFee)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -599,7 +547,6 @@ class _DeliveryRow extends StatelessWidget {
             ),
           ),
 
-        // Delivery fee
         if (showFee) ...[
           const Icon(
             Icons.delivery_dining_rounded,
@@ -618,14 +565,6 @@ class _DeliveryRow extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// LOGO WITH STATUS DOT
-//
-// Positioned at END side of the card via PositionedDirectional.
-// Dot at START side of the logo via PositionedDirectional.
-// Both flip correctly in RTL ↔ LTR.
-// ============================================================
 
 class _Logo extends StatelessWidget {
   final String url;
@@ -662,7 +601,6 @@ class _Logo extends StatelessWidget {
               ),
             ),
           ),
-          // Status dot — at the START side of the logo
           PositionedDirectional(
             bottom: 0,
             start: 0,
@@ -683,14 +621,6 @@ class _Logo extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// LOADING & ERROR VIEWS
-// ============================================================
-
-// ============================================================
-// HOME LOADING VIEW — SHIMMER SKELETON
-// ============================================================
 
 class HomeLoadingView extends StatefulWidget {
   const HomeLoadingView({super.key});
@@ -722,7 +652,7 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     final screenW = MediaQuery.of(context).size.width;
-    final catItemW = (screenW - 32 - 30) / 4; // matches CategoriesSection
+    final catItemW = (screenW - 32 - 30) / 4;
 
     return AnimatedBuilder(
       animation: _shimmerCtrl,
@@ -731,10 +661,8 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
           children: [
-            // ── Header skeleton ──
             _buildHeaderSkeleton(topPadding),
 
-            // ── Banner skeleton ──
             const SizedBox(height: 16),
             _bone(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -742,7 +670,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
               radius: 14,
             ),
 
-            // ── Categories skeleton ──
             const SizedBox(height: 24),
             _buildSectionTitle(),
             const SizedBox(height: 10),
@@ -767,7 +694,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
               ),
             ),
 
-            // ── Featured restaurants skeleton (horizontal) ──
             const SizedBox(height: 24),
             _buildSectionTitle(),
             const SizedBox(height: 10),
@@ -784,7 +710,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
               ),
             ),
 
-            // ── All restaurants skeleton (vertical) ──
             const SizedBox(height: 24),
             _buildSectionTitle(),
             const SizedBox(height: 10),
@@ -803,7 +728,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
     );
   }
 
-  // ── Header skeleton ──
   Widget _buildHeaderSkeleton(double topPadding) {
     return Container(
       padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 14),
@@ -834,7 +758,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
     );
   }
 
-  // ── Section title skeleton ──
   Widget _buildSectionTitle() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -848,7 +771,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
     );
   }
 
-  // ── Restaurant card skeleton ──
   Widget _buildRestaurantCardSkeleton(double width) {
     return SizedBox(
       width: width,
@@ -884,7 +806,6 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
     );
   }
 
-  // ── Single shimmer bone ──
   Widget _bone({
     double? width,
     double? height,

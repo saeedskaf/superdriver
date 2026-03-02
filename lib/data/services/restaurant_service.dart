@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -6,10 +7,6 @@ import 'package:superdriver/data/local_secure/secure_storage.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 
 class RestaurantServices {
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
   Future<Map<String, String>> _getHeaders({bool requiresAuth = false}) async {
     final headers = <String, String>{
       'Content-Type': 'application/json; charset=UTF-8',
@@ -34,7 +31,7 @@ class RestaurantServices {
       queryParameters: queryParams?.isNotEmpty == true ? queryParams : null,
     );
     final headers = await _getHeaders(requiresAuth: requiresAuth);
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     log('GET $uri → ${response.statusCode}: ${response.body}');
 
     if (response.statusCode == 200) return jsonDecode(response.body);
@@ -96,10 +93,6 @@ class RestaurantServices {
     }
   }
 
-  // ============================================================
-  // RESTAURANTS
-  // ============================================================
-
   Future<List<RestaurantListItem>> getRestaurants({
     RestaurantFilterParams? filters,
   }) async {
@@ -135,10 +128,6 @@ class RestaurantServices {
     return await _get(Environment.restaurantReviewsEndpoint(slug));
   }
 
-  // ============================================================
-  // CATEGORIES
-  // ============================================================
-
   Future<List<RestaurantCategory>> getCategories() async {
     final json = await _get(Environment.restaurantCategoriesEndpoint);
     return _parseCategoryList(json);
@@ -157,10 +146,6 @@ class RestaurantServices {
     );
     return _parseRestaurantList(json);
   }
-
-  // ============================================================
-  // LOCATION & SEARCH
-  // ============================================================
 
   Future<List<RestaurantListItem>> getNearbyRestaurants({
     required double lat,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -28,7 +29,7 @@ class CartServices {
         }
       }
     }
-    return 'حدث خطأ غير متوقع';
+    return '\u062d\u062f\u062b \u062e\u0637\u0623 \u063a\u064a\u0631 \u0645\u062a\u0648\u0642\u0639';
   }
 
   /// Get cart by cart_id or restaurant_id
@@ -46,8 +47,13 @@ class CartServices {
     ).replace(queryParameters: queryParams);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Get Cart Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -62,8 +68,13 @@ class CartServices {
     final uri = Uri.parse(Environment.allCartsEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
-    final responseBody = jsonDecode(response.body);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Get All Carts Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -82,9 +93,14 @@ class CartServices {
       uri,
       headers: headers,
       body: jsonEncode(request.toJson()),
-    );
+    ).timeout(const Duration(seconds: 30));
 
-    final responseBody = jsonDecode(response.body);
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Add to Cart Response: $responseBody');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -112,9 +128,14 @@ class CartServices {
       uri,
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 30));
 
-    final responseBody = jsonDecode(response.body);
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Update Cart Item Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -129,9 +150,14 @@ class CartServices {
     final uri = Uri.parse(Environment.cartItemEndpoint(itemId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers);
+    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
 
-    final responseBody = jsonDecode(response.body);
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Delete Cart Item Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -146,11 +172,16 @@ class CartServices {
     final uri = Uri.parse(Environment.clearCartEndpoint(cartId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers);
+    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
     log('Clear Cart Status: ${response.statusCode}');
 
     if (response.statusCode != 204 && response.statusCode != 200) {
-      final responseBody = jsonDecode(response.body);
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
   }
@@ -162,12 +193,17 @@ class CartServices {
     ).replace(queryParameters: {'cart_id': cartId.toString()});
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers);
+    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
     log('Delete Cart Status: ${response.statusCode}');
 
     if (response.statusCode != 204 && response.statusCode != 200) {
       if (response.body.isNotEmpty) {
-        final responseBody = jsonDecode(response.body);
+        late final dynamic responseBody;
+        try {
+          responseBody = jsonDecode(response.body);
+        } on FormatException {
+          throw Exception('Invalid server response');
+        }
         throw Exception(_extractErrorMessage(responseBody));
       }
       throw Exception('Failed to delete cart');
@@ -183,9 +219,14 @@ class CartServices {
       uri,
       headers: headers,
       body: jsonEncode({'code': code}),
-    );
+    ).timeout(const Duration(seconds: 30));
 
-    final responseBody = jsonDecode(response.body);
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Apply Coupon Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -200,9 +241,14 @@ class CartServices {
     final uri = Uri.parse(Environment.removeCouponEndpoint(cartId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers);
+    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
 
-    final responseBody = jsonDecode(response.body);
+    late final dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('Invalid server response');
+    }
     log('Remove Coupon Response: $responseBody');
 
     if (response.statusCode == 200) {
@@ -219,14 +265,19 @@ class CartServices {
     ).replace(queryParameters: {'cart_id': cartId.toString()});
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     log('Validate Cart Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       return true;
     } else {
       if (response.body.isNotEmpty) {
-        final responseBody = jsonDecode(response.body);
+        late final dynamic responseBody;
+        try {
+          responseBody = jsonDecode(response.body);
+        } on FormatException {
+          throw Exception('Invalid server response');
+        }
         throw Exception(_extractErrorMessage(responseBody));
       }
       throw Exception('Cart validation failed');

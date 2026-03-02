@@ -10,8 +10,8 @@ import 'package:superdriver/domain/bloc/address/address_bloc.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/domain/models/location_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/profile/full_map_picker_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -421,7 +421,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
 
                         _buildLabel('${l10n.governorate} *'),
                         DropdownButtonFormField<Governorate>(
-                          value: _selectedGovernorate,
+                          initialValue: _selectedGovernorate,
                           decoration: _dropdownDecoration(
                             l10n.selectGovernorate,
                           ),
@@ -443,7 +443,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
 
                         _buildLabel('${l10n.area} *'),
                         DropdownButtonFormField<Area>(
-                          value: _selectedArea,
+                          initialValue: _selectedArea,
                           decoration: _dropdownDecoration(
                             _selectedGovernorate == null
                                 ? l10n.selectGovernorateFirst
@@ -578,7 +578,9 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                                 onChanged: (value) {
                                   setState(() => _isCurrent = value);
                                 },
-                                activeColor: ColorsCustom.primary,
+                                activeThumbColor: ColorsCustom.primary,
+                                activeTrackColor: ColorsCustom.primary
+                                    .withAlpha(90),
                               ),
                             ],
                           ),
@@ -614,8 +616,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       ),
     );
   }
-
-  // ── Map Section ──
 
   Widget _buildMapSection(AppLocalizations l10n) {
     return Container(
@@ -794,8 +794,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       ),
     );
   }
-
-  // ── Helpers ──
 
   Widget _buildLabel(String text) {
     return Padding(

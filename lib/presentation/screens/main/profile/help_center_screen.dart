@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class HelpCenterScreen extends StatefulWidget {
@@ -18,10 +18,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
   int? _expandedCategoryIndex;
   int? _expandedQuestionIndex;
-
-  // ============================================================
-  // FAQ DATA
-  // ============================================================
 
   List<_FaqCategory> _buildFaqData(AppLocalizations l10n) {
     return [
@@ -76,10 +72,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       ),
     ];
   }
-
-  // ============================================================
-  // ACTIONS
-  // ============================================================
 
   Future<void> _sendEmail() async {
     final uri = Uri(scheme: 'mailto', path: _email);
@@ -154,10 +146,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     });
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -198,11 +186,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
         children: [
-          // ── Header card ──
           _buildHeaderCard(l10n),
           const SizedBox(height: 24),
 
-          // ── FAQ Section Title ──
           TextCustom(
             text: l10n.frequentlyAskedQuestions,
             fontSize: 17,
@@ -211,7 +197,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
           const SizedBox(height: 14),
 
-          // ── FAQ Categories ──
           ...List.generate(faqData.length, (i) {
             final cat = faqData[i];
             final isExpanded = _expandedCategoryIndex == i;
@@ -223,16 +208,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
           const SizedBox(height: 24),
 
-          // ── Contact Section ──
           _buildContactSection(l10n),
         ],
       ),
     );
   }
-
-  // ============================================================
-  // HEADER CARD
-  // ============================================================
 
   Widget _buildHeaderCard(AppLocalizations l10n) {
     return Container(
@@ -289,10 +269,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     );
   }
 
-  // ============================================================
-  // FAQ CATEGORY CARD
-  // ============================================================
-
   Widget _buildCategoryCard(_FaqCategory cat, int index, bool isExpanded) {
     return Container(
       decoration: BoxDecoration(
@@ -313,7 +289,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       ),
       child: Column(
         children: [
-          // ── Category header ──
           InkWell(
             onTap: () => _toggleCategory(index),
             borderRadius: BorderRadius.circular(16),
@@ -353,7 +328,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             ),
           ),
 
-          // ── Questions list ──
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: _buildQuestionsList(cat),
@@ -448,10 +422,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     );
   }
 
-  // ============================================================
-  // CONTACT SECTION
-  // ============================================================
-
   Widget _buildContactSection(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -493,7 +463,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ── Phone row ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -543,7 +512,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── WhatsApp & Call buttons ──
           Row(
             children: [
               Expanded(
@@ -595,7 +563,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           const Divider(height: 1, color: ColorsCustom.border),
           const SizedBox(height: 16),
 
-          // ── Email row ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -644,7 +611,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
           const SizedBox(height: 14),
 
-          // ── Send email button ──
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -672,10 +638,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     );
   }
 }
-
-// ============================================================
-// DATA MODELS
-// ============================================================
 
 class _FaqCategory {
   final IconData icon;

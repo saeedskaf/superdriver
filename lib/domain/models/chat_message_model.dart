@@ -1,15 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
-// ============================================================
-// MESSAGE TYPE
-// ============================================================
-
-enum MessageType { text, image }
-
-// ============================================================
-// CHAT MESSAGE MODEL
-// ============================================================
+enum MessageType { text, image, location, system }
 
 class ChatMessage extends Equatable {
   final String id;
@@ -18,6 +10,7 @@ class ChatMessage extends Equatable {
   final String senderType; // "user" | "admin"
   final MessageType type;
   final String? imageUrl;
+  final Map<String, dynamic>? locationData;
   final DateTime createdAt;
   final DateTime? readAt;
 
@@ -28,6 +21,7 @@ class ChatMessage extends Equatable {
     required this.senderType,
     required this.type,
     this.imageUrl,
+    this.locationData,
     required this.createdAt,
     this.readAt,
   });
@@ -35,7 +29,34 @@ class ChatMessage extends Equatable {
   bool get isUser => senderType == 'user';
   bool get isAdmin => senderType == 'admin';
   bool get isImage => type == MessageType.image;
+  bool get isLocation => type == MessageType.location;
   bool get isRead => readAt != null;
+
+  static MessageType _parseType(String? type) {
+    switch (type) {
+      case 'image':
+        return MessageType.image;
+      case 'location':
+        return MessageType.location;
+      case 'system':
+        return MessageType.system;
+      default:
+        return MessageType.text;
+    }
+  }
+
+  static String _typeToString(MessageType type) {
+    switch (type) {
+      case MessageType.image:
+        return 'image';
+      case MessageType.location:
+        return 'location';
+      case MessageType.system:
+        return 'system';
+      case MessageType.text:
+        return 'text';
+    }
+  }
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -44,8 +65,11 @@ class ChatMessage extends Equatable {
       text: data['text'] ?? '',
       senderId: data['senderId'] ?? '',
       senderType: data['senderType'] ?? 'user',
-      type: data['type'] == 'image' ? MessageType.image : MessageType.text,
+      type: _parseType(data['type']),
       imageUrl: data['imageUrl'],
+      locationData: data['locationData'] != null
+          ? Map<String, dynamic>.from(data['locationData'])
+          : null,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       readAt: (data['readAt'] as Timestamp?)?.toDate(),
     );
@@ -56,9 +80,10 @@ class ChatMessage extends Equatable {
       'text': text,
       'senderId': senderId,
       'senderType': senderType,
-      'type': type == MessageType.image ? 'image' : 'text',
+      'type': _typeToString(type),
       if (imageUrl != null) 'imageUrl': imageUrl,
-      'createdAt': FieldValue.serverTimestamp(),
+      if (locationData != null) 'locationData': locationData,
+      'createdAt': Timestamp.fromDate(createdAt),
       'readAt': readAt != null ? Timestamp.fromDate(readAt!) : null,
     };
   }
@@ -66,10 +91,6 @@ class ChatMessage extends Equatable {
   @override
   List<Object?> get props => [id];
 }
-
-// ============================================================
-// CHAT ROOM MODEL (parent document)
-// ============================================================
 
 class ChatRoom {
   final String id;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/notification/notification_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/home/address_selector.dart';
 import 'package:superdriver/presentation/screens/notifications/notifications_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
@@ -39,7 +39,6 @@ class HomeHeader extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // ── Background image + gradient fade ──
           SizedBox(
             height: imageHeight,
             width: double.infinity,
@@ -70,7 +69,6 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
 
-          // ── Address row ──
           Positioned(
             top: topPadding + 12,
             left: 16,
@@ -215,7 +213,6 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
 
-          // ── Search bar (straddles image bottom edge) ──
           Positioned(
             left: 16,
             right: 16,

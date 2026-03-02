@@ -10,14 +10,14 @@ import 'package:superdriver/domain/bloc/menu/menu_bloc.dart';
 import 'package:superdriver/domain/bloc/cart/cart_bloc.dart';
 import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
-import 'package:superdriver/domain/services/address_service.dart';
+import 'package:superdriver/data/services/address_service.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/screens/main/home/address_selector.dart';
 import 'package:superdriver/presentation/screens/main/home/home_app_bar.dart';
 import 'package:superdriver/presentation/screens/main/home/home_sections.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
-import 'package:superdriver/presentation/screens/main/home/restaurant_detail_screen.dart';
-import 'package:superdriver/presentation/screens/main/home/restaurants_screen.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
+import 'package:superdriver/presentation/screens/main/restaurant/restaurant_detail_screen.dart';
+import 'package:superdriver/presentation/screens/main/restaurant/restaurants_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,22 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ============================================================
-  // AUTH HELPER
-  // ============================================================
-
   bool get _isAuthenticated {
     return context.read<AuthBloc>().state is AuthAuthenticated;
   }
 
-  // ============================================================
-  // LOCATION
-  // ============================================================
-
   Future<void> _resolveInitialLocation() async {
+    final l10nLocal = AppLocalizations.of(context)!;
     DeliveryLocationResult? location;
 
-    // ── Authenticated: try saved addresses first ──
+    // try saved addresses first
     if (_isAuthenticated) {
       try {
         final addresses = await addressService.getAllAddresses();
@@ -82,10 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // ── Fallback (both guest & authenticated): GPS auto-detect ──
+    // fallback: GPS
     if (location == null) {
       try {
-        location = await getCurrentLocationAsDefault();
+        location = await getCurrentLocationAsDefault(fallbackLocationName: l10nLocal.currentLocation);
       } catch (e) {
         log('HomeScreen [3] GPS FAILED -> $e');
       }
@@ -99,10 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
       HomeLoadRequested(lat: location?.latitude, lng: location?.longitude),
     );
   }
-
-  // ============================================================
-  // EVENTS
-  // ============================================================
 
   Future<void> _onRefresh() async {
     context.read<HomeBloc>().add(
@@ -124,10 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<HomeBloc>().add(const HomeLoadMoreRestaurants());
   }
 
-  // ============================================================
-  // ADDRESS SELECTOR — auth-aware
-  // ============================================================
-
   void _openAddressSelector() {
     showAddressSelector(
       context,
@@ -136,10 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isAuthenticated: _isAuthenticated,
     );
   }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -203,20 +184,17 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
-          // ---- Header ----
           HomeHeader(
             selectedLocation: _selectedLocation,
             onLocationTap: _openAddressSelector,
             onSearchTap: _navigateToSearch,
           ),
 
-          // ---- Banners ----
           if (data.banners.isNotEmpty) ...[
             const SizedBox(height: 16),
             BannersSection(banners: data.banners),
           ],
 
-          // ---- Categories ----
           if (data.categories.isNotEmpty) ...[
             const SizedBox(height: 24),
             CategoriesSection(
@@ -225,7 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // ---- Featured (horizontal scroll) ----
           if (data.featuredRestaurants.isNotEmpty) ...[
             const SizedBox(height: 24),
             RestaurantsHorizontalSection(
@@ -237,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // ---- Recommended (horizontal scroll, auth only) ----
           if (state.isAuthenticated &&
               (state.recommendedRestaurants?.isNotEmpty ?? false)) ...[
             const SizedBox(height: 24),
@@ -248,7 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // ---- Nearby (horizontal scroll) ----
           if (state.nearbyRestaurants?.isNotEmpty ?? false) ...[
             const SizedBox(height: 24),
             RestaurantsHorizontalSection(
@@ -258,7 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // ---- New (horizontal scroll) ----
           if (data.newRestaurants.isNotEmpty) ...[
             const SizedBox(height: 24),
             RestaurantsHorizontalSection(
@@ -270,7 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // ---- All Restaurants (vertical scroll, paginated) ----
           if (state.allRestaurants.isNotEmpty) ...[
             const SizedBox(height: 24),
             RestaurantsVerticalSection(
@@ -288,10 +261,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // NAVIGATION
-  // ============================================================
 
   void _navigateToSearch() {
     _push(

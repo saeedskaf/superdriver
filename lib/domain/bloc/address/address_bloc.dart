@@ -1,10 +1,10 @@
-// lib/domain/bloc/address/address_bloc.dart
+import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/domain/models/location_model.dart';
-import 'package:superdriver/domain/services/address_service.dart';
+import 'package:superdriver/data/services/address_service.dart';
 
 part 'address_event.dart';
 part 'address_state.dart';
@@ -91,10 +91,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         isCurrent: event.isCurrent,
       );
 
-      // Refresh cache in background
       _refreshAddressCache();
-
-      // Only emit success state once
       emit(AddressAddSuccess(address: address));
     } catch (e) {
       emit(AddressError(e.toString().replaceAll('Exception: ', '')));
@@ -123,10 +120,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         isCurrent: event.isCurrent,
       );
 
-      // Refresh cache in background
       _refreshAddressCache();
-
-      // Only emit success state once
       emit(AddressUpdateSuccess(address: address));
     } catch (e) {
       emit(AddressError(e.toString().replaceAll('Exception: ', '')));
@@ -141,10 +135,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     try {
       await addressService.deleteAddress(event.id);
 
-      // Refresh cache in background
       _refreshAddressCache();
-
-      // Only emit success state once - list screen will refresh
       emit(const AddressDeleteSuccess());
     } catch (e) {
       emit(AddressError(e.toString().replaceAll('Exception: ', '')));
@@ -159,10 +150,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     try {
       await addressService.setCurrentAddress(event.id);
 
-      // Refresh cache in background
       _refreshAddressCache();
-
-      // Only emit success state once - list screen will refresh
       emit(const AddressSetCurrentSuccess());
     } catch (e) {
       emit(AddressError(e.toString().replaceAll('Exception: ', '')));
@@ -186,14 +174,12 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     }
   }
 
-  /// Refresh address cache in background without emitting state
   Future<void> _refreshAddressCache() async {
     try {
       final addresses = await addressService.getAllAddresses();
       _cachedAddresses = addresses;
     } catch (e) {
-      // Silently fail - cache will be refreshed on next list request
-      print('Failed to refresh address cache: $e');
+      log('Failed to refresh address cache: $e');
     }
   }
 

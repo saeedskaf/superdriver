@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
-import 'package:superdriver/presentation/components/form_field_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/custom_form_field.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class EditProfileScreen extends StatefulWidget {

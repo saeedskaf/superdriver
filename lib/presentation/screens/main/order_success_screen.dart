@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/models/order_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -67,7 +67,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
             children: [
               const Spacer(),
 
-              // ── Success icon ──
               AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
@@ -98,7 +97,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
               ),
               const SizedBox(height: 36),
 
-              // ── Title + subtitle ──
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Column(
@@ -122,7 +120,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
               ),
               const SizedBox(height: 36),
 
-              // ── Order info card ──
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Container(
@@ -165,7 +162,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
               ),
               const Spacer(),
 
-              // ── Buttons ──
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Column(
@@ -207,10 +203,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     );
   }
 }
-
-// ============================================
-// INFO ROW
-// ============================================
 
 class _InfoRow extends StatelessWidget {
   final String label;

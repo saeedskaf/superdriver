@@ -9,21 +9,13 @@ import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/order_success_screen.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/main/profile/addresses_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
-// ============================================
-// DELIVERY TIME OPTIONS
-// ============================================
-
 enum DeliveryTimeOption { now, scheduled }
-
-// ============================================
-// CHECKOUT SCREEN
-// ============================================
 
 class CheckoutScreen extends StatefulWidget {
   final Cart cart;
@@ -81,10 +73,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  // ============================================
-  // PHONE HELPERS
-  // ============================================
-
   String _normalizePhone(String phone) {
     if (phone.isEmpty) return '';
     var cleaned = phone.replaceAll(RegExp(r'[\s\-]'), '');
@@ -106,10 +94,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     return '+963$normalized';
   }
-
-  // ============================================
-  // DATE TIME HELPERS
-  // ============================================
 
   String _formatDateTime(DateTime dateTime, AppLocalizations l10n) {
     final now = DateTime.now();
@@ -174,10 +158,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
   }
-
-  // ============================================
-  // ORDER CONFIRMATION
-  // ============================================
 
   void _confirmOrder(BuildContext context, AppLocalizations l10n) {
     FocusScope.of(context).unfocus();
@@ -256,13 +236,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       context,
       MaterialPageRoute(builder: (_) => const AddressesScreen()),
     );
-    if (!mounted) return;
+    if (!context.mounted) return;
     context.read<AddressBloc>().add(const AddressListRequested());
   }
-
-  // ============================================
-  // BUILD
-  // ============================================
 
   @override
   Widget build(BuildContext context) {
@@ -427,10 +403,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 }
 
-// ============================================
-// APP BAR WIDGETS
-// ============================================
-
 class _BackButton extends StatelessWidget {
   const _BackButton();
 
@@ -456,10 +428,6 @@ class _BackButton extends StatelessWidget {
   }
 }
 
-// ============================================
-// SECTION TITLE
-// ============================================
-
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -478,10 +446,6 @@ class _SectionTitle extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// ADDRESS SECTION
-// ============================================
 
 class _AddressSection extends StatelessWidget {
   final List<AddressSummary> addresses;
@@ -775,10 +739,6 @@ class _ManageAddressesButton extends StatelessWidget {
   }
 }
 
-// ============================================
-// PHONE SECTION
-// ============================================
-
 class _PhoneSection extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -913,10 +873,6 @@ class _PhoneSection extends StatelessWidget {
   }
 }
 
-// ============================================
-// DELIVERY TIME SECTION
-// ============================================
-
 class _DeliveryTimeSection extends StatelessWidget {
   final DeliveryTimeOption selectedOption;
   final DateTime? scheduledTime;
@@ -949,7 +905,7 @@ class _DeliveryTimeSection extends StatelessWidget {
             icon: Icons.flash_on_rounded,
             title: l10n.immediateDelivery,
             subtitle: l10n.within30To45Minutes,
-            iconColor: Colors.orange,
+            iconColor: ColorsCustom.secondaryDark,
             isSelected: selectedOption == DeliveryTimeOption.now,
             onTap: () => onOptionChanged(DeliveryTimeOption.now),
           ),
@@ -1005,7 +961,7 @@ class _DeliveryTimeOption extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: iconColor.withAlpha(26),
+                color: iconColor.withAlpha(20),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: iconColor, size: 22),
@@ -1098,10 +1054,6 @@ class _ScheduledTimePicker extends StatelessWidget {
   }
 }
 
-// ============================================
-// PAYMENT SECTION
-// ============================================
-
 class _PaymentSection extends StatelessWidget {
   const _PaymentSection();
 
@@ -1158,10 +1110,6 @@ class _PaymentSection extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// ITEM NOTES SECTION
-// ============================================
 
 class _ItemNotesSection extends StatelessWidget {
   final List<CartItem> items;
@@ -1286,10 +1234,6 @@ class _ItemNoteField extends StatelessWidget {
   }
 }
 
-// ============================================
-// ORDER SUMMARY SECTION
-// ============================================
-
 class _OrderSummarySection extends StatelessWidget {
   final Cart cart;
 
@@ -1397,7 +1341,7 @@ class _CartItemRow extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: url,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => _buildPlaceholder(),
+                errorWidget: (_, error, stackTrace) => _buildPlaceholder(),
               ),
             )
           : _buildPlaceholder(),
@@ -1499,10 +1443,6 @@ class _TotalRow extends StatelessWidget {
   }
 }
 
-// ============================================
-// CONFIRM ORDER BAR
-// ============================================
-
 class _ConfirmOrderBar extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback onConfirm;
@@ -1578,10 +1518,6 @@ class _ConfirmOrderBar extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// SHARED WIDGETS
-// ============================================
 
 class _SelectionIndicator extends StatelessWidget {
   final bool isSelected;

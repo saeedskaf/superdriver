@@ -5,15 +5,11 @@ import 'package:superdriver/domain/bloc/menu/menu_bloc.dart';
 import 'package:superdriver/domain/bloc/cart/cart_bloc.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
-import 'package:superdriver/presentation/screens/main/home/restaurant_detail_screen.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
+import 'package:superdriver/presentation/screens/main/restaurant/restaurant_detail_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================================
-// SCREEN MODES
-// ============================================================
 
 enum RestaurantsScreenMode {
   all,
@@ -25,10 +21,6 @@ enum RestaurantsScreenMode {
   nearby,
   newRestaurants,
 }
-
-// ============================================================
-// RESTAURANTS SCREEN
-// ============================================================
 
 class RestaurantsScreen extends StatefulWidget {
   final RestaurantsScreenMode mode;
@@ -123,14 +115,12 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   final _searchFocus = FocusNode();
   final _scrollCtrl = ScrollController();
 
-  // ── Filters ──
   bool _openNow = false;
   bool _hasDiscount = false;
   bool _freeDelivery = false;
   String? _sorting;
   String _query = '';
 
-  // ── Pagination ──
   int _currentPage = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
@@ -170,10 +160,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       _sorting = '-total_orders';
     }
   }
-
-  // ============================================================
-  // DATA
-  // ============================================================
 
   void _load() {
     _currentPage = 1;
@@ -307,10 +293,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -362,8 +344,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     );
   }
 
-  // ── Back button ──
-
   Widget _buildBackButton() {
     return Align(
       alignment: AlignmentDirectional.centerStart,
@@ -385,8 +365,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       ),
     );
   }
-
-  // ── App bar ──
 
   Widget _buildAppBar(AppLocalizations l10n) {
     return Container(
@@ -437,8 +415,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       ),
     );
   }
-
-  // ── Search ──
 
   Widget _buildSearch(AppLocalizations l10n) {
     return Padding(
@@ -500,8 +476,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       ),
     );
   }
-
-  // ── Filters ──
 
   Widget _buildFilters(AppLocalizations l10n) {
     final hasActive =
@@ -578,8 +552,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       ),
     );
   }
-
-  // ── Body content ──
 
   Widget _buildBody(AppLocalizations l10n, RestaurantState s) {
     // Initial loading
@@ -680,10 +652,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   }
 }
 
-// ============================================================
-// FILTER CHIP — colored per type
-// ============================================================
-
 class _FilterChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -736,10 +704,6 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// SORT CHIP + SHEET
-// ============================================================
 
 class _SortChip extends StatelessWidget {
   final String label;
@@ -939,10 +903,6 @@ class _SortChip extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// STATE VIEWS (error / empty / search-empty)
-// ============================================================
 
 class _StateView extends StatelessWidget {
   final IconData icon;

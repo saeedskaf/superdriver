@@ -8,16 +8,12 @@ import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/domain/bloc/address/address_bloc.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/checkout_screen.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================
-// CART DETAIL SCREEN
-// ============================================
 
 class CartDetailScreen extends StatefulWidget {
   final int cartId;
@@ -37,16 +33,11 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   final _couponController = TextEditingController();
   bool _showCouponField = false;
 
-  /// Cache the last valid cart so transient error states (e.g. invalid coupon)
-  /// don't wipe the UI.
+  // Keep last valid cart so transient errors don't wipe the UI
   Cart? _lastCart;
 
-  /// Track items dismissed via swipe so they vanish instantly from the list
-  /// before the server round-trip completes.
+  // Items dismissed via swipe, hidden before server confirms
   final Set<int> _dismissedItemIds = {};
-
-  // ── AuthCheckStatus removed: caller (CartScreen) already guarantees auth,
-  //    and the BlocBuilder below reacts to AuthBloc state changes anyway.
 
   @override
   void initState() {
@@ -143,8 +134,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (state is CartError) {
-      // Suppress "cart not found" errors when the cart is already empty
-      // (happens after deleting the last item triggers an auto-reload).
       if (_lastCart == null || _lastCart!.isEmpty) return;
       _showSnackBar(context, state.message, isError: true);
     } else if (state is CartOperationSuccess) {
@@ -316,10 +305,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   }
 }
 
-// ============================================
-// APP BAR WIDGETS
-// ============================================
-
 class _BackButton extends StatelessWidget {
   const _BackButton();
 
@@ -374,10 +359,6 @@ class _ClearCartButton extends StatelessWidget {
   }
 }
 
-// ============================================
-// NOT LOGGED IN VIEW
-// ============================================
-
 class _NotLoggedInView extends StatelessWidget {
   final VoidCallback onLogin;
 
@@ -428,10 +409,6 @@ class _NotLoggedInView extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// EMPTY CART VIEW
-// ============================================
 
 class _EmptyCartView extends StatelessWidget {
   final VoidCallback onBack;
@@ -495,10 +472,6 @@ class _EmptyCartView extends StatelessWidget {
   }
 }
 
-// ============================================
-// LOADING VIEW
-// ============================================
-
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
 
@@ -511,10 +484,6 @@ class _LoadingView extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// RESTAURANT INFO CARD
-// ============================================
 
 class _RestaurantInfoCard extends StatelessWidget {
   final CartRestaurant restaurant;
@@ -587,10 +556,6 @@ class _RestaurantLogo extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// CART ITEM CARD
-// ============================================
 
 class _CartItemCard extends StatelessWidget {
   final CartItem item;
@@ -870,10 +835,6 @@ class _QuantityButton extends StatelessWidget {
   }
 }
 
-// ============================================
-// COUPON SECTION
-// ============================================
-
 class _CouponSection extends StatelessWidget {
   final Cart cart;
   final TextEditingController controller;
@@ -1062,10 +1023,6 @@ class _CouponSection extends StatelessWidget {
   }
 }
 
-// ============================================
-// CHECKOUT SECTION
-// ============================================
-
 class _CheckoutSection extends StatelessWidget {
   final Cart cart;
   final VoidCallback onCheckout;
@@ -1224,10 +1181,6 @@ class _CheckoutButton extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// CLEAR CART DIALOG
-// ============================================
 
 class _ClearCartDialog extends StatelessWidget {
   final VoidCallback onCancel;

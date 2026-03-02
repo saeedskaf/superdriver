@@ -1563,7 +1563,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSend => 'Send';
 
   @override
+  String get chatPageTitle => 'As You Wish';
+
+  @override
   String get chatImageSendError => 'Failed to send image';
+
+  @override
+  String get chatSessionUnavailable => 'Please log in again to access chat';
+
+  @override
+  String get chatLocation => 'Location';
+
+  @override
+  String get chatPickLocation => 'Pick delivery location';
+
+  @override
+  String get chatSavedAddresses => 'Saved addresses';
+
+  @override
+  String get chatCurrentLocation => 'Current location';
+
+  @override
+  String get chatPickOnMap => 'Pick on map';
+
+  @override
+  String get chatDeliveryAddress => 'Delivery address';
+
+  @override
+  String get chatLocationSendError => 'Failed to send location';
+
+  @override
+  String get chatNoSavedAddresses => 'No saved addresses';
+
+  @override
+  String get chatDetectingLocation => 'Detecting location...';
 
   @override
   String get chatMessage => 'Message';
@@ -1573,6 +1606,133 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatMessageTooLong => 'Message is too long';
+
+  @override
+  String get chatNewOrderTitle => 'New chat order';
+
+  @override
+  String get chatNewOrderSubtitle =>
+      'Choose a saved address first, then start chatting with the admin to create the order.';
+
+  @override
+  String get chatSelectAddress => 'Choose a saved address';
+
+  @override
+  String get chatNoAddresses => 'No saved addresses';
+
+  @override
+  String get chatNoAddressesBody =>
+      'Add an address from your profile first so you can create a new order in chat.';
+
+  @override
+  String get chatAddAddress => 'Add address';
+
+  @override
+  String get chatManageAddresses => 'Manage';
+
+  @override
+  String get chatEmergencyTitle => 'Emergency or issue';
+
+  @override
+  String get chatEmergencySubtitle =>
+      'Need help? Open a ticket for driver or order issues, rating disputes, or emergencies.';
+
+  @override
+  String get chatOpenTicket => 'Open ticket';
+
+  @override
+  String get chatCreating => 'Creating...';
+
+  @override
+  String get chatIssueCategory => 'Issue category';
+
+  @override
+  String get chatRelatedOrderOptional => 'Related order ID (optional)';
+
+  @override
+  String get chatRelatedOrderHint => 'Example: 45821';
+
+  @override
+  String get chatStartTicket => 'Start ticket';
+
+  @override
+  String get chatEmergencyHeader => 'Emergency ticket';
+
+  @override
+  String get chatOrderProblem => 'Order problem';
+
+  @override
+  String get chatDriverProblem => 'Driver issue';
+
+  @override
+  String get chatRatingProblem => 'Rating dispute';
+
+  @override
+  String get chatTechProblem => 'Technical issue';
+
+  @override
+  String get chatOtherProblem => 'Other';
+
+  @override
+  String get chatNoConversations => 'No conversations yet';
+
+  @override
+  String get chatNoConversationsBody =>
+      'Start a new order or open an emergency ticket, and all past conversations will appear here.';
+
+  @override
+  String get chatConversationsLoadError =>
+      'Unable to load conversations right now';
+
+  @override
+  String get chatOpenNewOrder => 'New order';
+
+  @override
+  String get chatEmergencyTicketLabel => 'Emergency ticket';
+
+  @override
+  String get chatOrderRequestLabel => 'Order request';
+
+  @override
+  String get chatAttachImage => 'Image';
+
+  @override
+  String get chatSystemCreatedOrder => 'New order conversation created.';
+
+  @override
+  String get chatSystemCreatedIssue => 'New emergency ticket created.';
+
+  @override
+  String get chatCreateConversationError =>
+      'Unable to start the conversation right now';
+
+  @override
+  String get chatEmptyConversation =>
+      'Send a message to start the conversation';
+
+  @override
+  String get chatMessagesLoadError => 'Unable to load messages right now';
+
+  @override
+  String get chatRelatedOrder => 'Related order';
+
+  @override
+  String get chatStatusOpen => 'Open';
+
+  @override
+  String get chatStatusClosed => 'Closed';
+
+  @override
+  String get chatYou => 'You';
+
+  @override
+  String get chatAdmin => 'Support';
+
+  @override
+  String get chatImagePreview => '📷 Image';
+
+  @override
+  String get chatConversationClosed => 'This conversation is closed';
 
   @override
   String get orderDescription => 'Order Description';

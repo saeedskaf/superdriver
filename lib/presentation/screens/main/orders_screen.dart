@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/models/order_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -65,8 +65,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  // ── Snackbar ──
-
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -85,8 +83,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Navigation ──
-
   void _navigateToOrderDetails(BuildContext context, Order order) {
     Navigator.push(
       context,
@@ -104,8 +100,6 @@ class _OrdersScreenState extends State<OrdersScreen>
   void _reorder(BuildContext context, Order order) {
     context.read<OrdersBloc>().add(OrderReorderRequested(orderId: order.id));
   }
-
-  // ── Build ──
 
   @override
   Widget build(BuildContext context) {
@@ -168,8 +162,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Header ──
-
   Widget _buildHeader(AppLocalizations l10n) {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -214,8 +206,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Tabs ──
-
   Widget _buildTabs(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -248,12 +238,10 @@ class _OrdersScreenState extends State<OrdersScreen>
           labelColor: ColorsCustom.primary,
           unselectedLabelColor: ColorsCustom.textSecondary,
           labelStyle: const TextStyle(
-            fontFamily: 'Cairo',
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontFamily: 'Cairo',
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -283,8 +271,6 @@ class _OrdersScreenState extends State<OrdersScreen>
       ),
     );
   }
-
-  // ── Tab Content ──
 
   Widget _buildTabContent(AppLocalizations l10n) {
     return TabBarView(
@@ -321,8 +307,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     return _buildOrdersList(l10n, orders, isActiveTab);
   }
 
-  // ── Loading ──
-
   Widget _buildLoadingState(AppLocalizations l10n) {
     return Center(
       child: Column(
@@ -346,8 +330,6 @@ class _OrdersScreenState extends State<OrdersScreen>
       ),
     );
   }
-
-  // ── Error ──
 
   Widget _buildErrorState(AppLocalizations l10n) {
     return Center(
@@ -394,8 +376,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Empty ──
-
   Widget _buildEmptyState(
     AppLocalizations l10n,
     String message,
@@ -440,8 +420,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Orders List ──
-
   Widget _buildOrdersList(
     AppLocalizations l10n,
     List<Order> orders,
@@ -464,8 +442,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Order Card ──
-
   Widget _buildOrderCard(AppLocalizations l10n, Order order, bool isActiveTab) {
     final statusInfo = _getStatusInfo(order.status, l10n);
     final Color statusColor = statusInfo['color'];
@@ -481,7 +457,6 @@ class _OrdersScreenState extends State<OrdersScreen>
         ),
         child: Column(
           children: [
-            // ── Header row ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -569,7 +544,6 @@ class _OrdersScreenState extends State<OrdersScreen>
               child: Divider(color: ColorsCustom.border, height: 1),
             ),
 
-            // ── Footer ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -608,7 +582,6 @@ class _OrdersScreenState extends State<OrdersScreen>
               ],
             ),
 
-            // ── Action buttons ──
             if (isActiveTab && ['draft', 'placed'].contains(order.status)) ...[
               const SizedBox(height: 14),
               Row(
@@ -688,16 +661,14 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ── Cancel Dialog ──
-
-  void _showCancelDialog(
+  Future<void> _showCancelDialog(
     BuildContext context,
     AppLocalizations l10n,
     Order order,
-  ) {
+  ) async {
     final reasonController = TextEditingController();
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ColorsCustom.surface,
@@ -743,14 +714,12 @@ class _OrdersScreenState extends State<OrdersScreen>
                 style: const TextStyle(
                   fontSize: 14,
                   color: ColorsCustom.textPrimary,
-                  fontFamily: 'Cairo',
                 ),
                 decoration: InputDecoration(
                   hintText: l10n.cancellationReason,
                   hintStyle: const TextStyle(
                     color: ColorsCustom.textHint,
                     fontSize: 13,
-                    fontFamily: 'Cairo',
                   ),
                   filled: true,
                   fillColor: ColorsCustom.background,
@@ -794,9 +763,8 @@ class _OrdersScreenState extends State<OrdersScreen>
         ),
       ),
     );
+    reasonController.dispose();
   }
-
-  // ── Helpers ──
 
   Map<String, dynamic> _getStatusInfo(String status, AppLocalizations l10n) {
     switch (status) {

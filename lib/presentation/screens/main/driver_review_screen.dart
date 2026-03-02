@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/review/review_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class DriverReviewScreen extends StatefulWidget {
@@ -92,8 +92,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
     );
   }
 
-  // ── AppBar ──
-
   PreferredSizeWidget _buildAppBar(AppLocalizations l10n) {
     return AppBar(
       backgroundColor: ColorsCustom.surface,
@@ -124,8 +122,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
       centerTitle: true,
     );
   }
-
-  // ── Driver Card ──
 
   Widget _buildDriverCard(AppLocalizations l10n) {
     return Container(
@@ -174,8 +170,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
       ),
     );
   }
-
-  // ── Rating Card ──
 
   Widget _buildRatingCard(AppLocalizations l10n) {
     return Container(
@@ -271,8 +265,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
     }
   }
 
-  // ── Comment Card ──
-
   Widget _buildCommentCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -337,8 +329,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
     );
   }
 
-  // ── Submit Button ──
-
   Widget _buildSubmitButton(AppLocalizations l10n) {
     return BlocBuilder<ReviewBloc, ReviewState>(
       builder: (context, state) {
@@ -368,8 +358,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
     );
   }
 
-  // ── Skip Button ──
-
   Widget _buildSkipButton(AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
@@ -389,8 +377,6 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
       ),
     );
   }
-
-  // ── Success Dialog ──
 
   void _showSuccessDialog(BuildContext context, AppLocalizations l10n) {
     showDialog(

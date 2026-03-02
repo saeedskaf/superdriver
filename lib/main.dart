@@ -10,7 +10,7 @@ import 'package:superdriver/domain/bloc/notification/notification_bloc.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/domain/bloc/review/review_bloc.dart';
-import 'package:superdriver/domain/services/push_notification_service.dart';
+import 'package:superdriver/data/services/push_notification_service.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/screens/auth/splash_screen.dart';
 import 'package:superdriver/presentation/themes/app_theme.dart';
@@ -68,7 +68,6 @@ class _AppView extends StatelessWidget {
         listenWhen: (prev, curr) => prev.locale != curr.locale,
         listener: (context, state) {
           // Re-register device token with new language
-          // so backend sends push notifications in the correct language
           pushNotificationService.registerDeviceToken();
         },
         child: BlocBuilder<LocaleBloc, LocaleState>(

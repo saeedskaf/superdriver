@@ -5,10 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/helpers/modal_loading.dart';
-import 'package:superdriver/presentation/helpers/show_message.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/dialogs/loading_dialog.dart';
+import 'package:superdriver/presentation/dialogs/message_dialog.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 

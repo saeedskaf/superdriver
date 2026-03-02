@@ -4,20 +4,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/bloc/navigation/navigation_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/screens/main/home/home_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 import 'cart_screen.dart';
-import 'chat_screen.dart';
+import 'chat/chat_screen.dart';
 import 'orders_screen.dart';
 import 'profile/profile_screen.dart';
-
-// ============================================
-// MAIN SCREEN
-// ============================================
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -43,7 +39,7 @@ class _MainScreenContentState extends State<_MainScreenContent> {
 
   late List<Widget> _screens;
 
-  /// Tabs that require authentication (Orders=1, Chat=2, Cart=3, Profile=4)
+  // tabs that need auth
   static const _authRequiredTabs = {1, 2, 3, 4};
 
   @override
@@ -86,11 +82,9 @@ class _MainScreenContentState extends State<_MainScreenContent> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, authState) {
-        // Rebuild screens when auth state changes (e.g. after login)
         if (authState is AuthAuthenticated ||
             authState is AuthUnauthenticated) {
           setState(() => _buildScreens());
-          // If logged out, go back to home
           if (authState is AuthUnauthenticated) {
             context.read<NavigationBloc>().add(const NavigateToTab(0));
           }
@@ -119,8 +113,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
     });
   }
 
-  // ── Login required bottom sheet ──
-
   void _showLoginRequiredSheet() {
     final l10n = AppLocalizations.of(context)!;
 
@@ -136,7 +128,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Container(
               width: 40,
               height: 4,
@@ -147,7 +138,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
             ),
             const SizedBox(height: 24),
 
-            // Icon
             Container(
               width: 72,
               height: 72,
@@ -164,7 +154,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
             ),
             const SizedBox(height: 20),
 
-            // Title
             TextCustom(
               text: l10n.loginRequired,
               fontSize: 18,
@@ -174,7 +163,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
             ),
             const SizedBox(height: 8),
 
-            // Subtitle
             TextCustom(
               text: l10n.loginRequiredMessage,
               fontSize: 14,
@@ -183,7 +171,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
             ),
             const SizedBox(height: 24),
 
-            // Login button
             ButtonCustom.primary(
               text: l10n.login,
               onPressed: () {
@@ -196,7 +183,6 @@ class _MainScreenContentState extends State<_MainScreenContent> {
             ),
             const SizedBox(height: 12),
 
-            // Continue browsing
             ButtonCustom.secondary(
               text: l10n.continueBrowsing,
               onPressed: () => Navigator.pop(context),
@@ -208,13 +194,7 @@ class _MainScreenContentState extends State<_MainScreenContent> {
   }
 }
 
-// ============================================
-// AUTH PLACEHOLDER (for guest mode)
-// ============================================
-
-/// Empty lightweight widget shown in IndexedStack for auth-required tabs
-/// when user is not logged in. Prevents those screens from building
-/// and making API calls.
+// empty placeholder for guest mode
 class _AuthPlaceholder extends StatelessWidget {
   const _AuthPlaceholder();
 
@@ -223,10 +203,6 @@ class _AuthPlaceholder extends StatelessWidget {
     return const SizedBox.shrink();
   }
 }
-
-// ============================================
-// BOTTOM NAVIGATION BAR
-// ============================================
 
 class _BottomNavBar extends StatelessWidget {
   final ValueChanged<int> onTabSelected;
@@ -249,7 +225,6 @@ class _BottomNavBar extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // ── Bar ──
               Positioned(
                 left: 0,
                 right: 0,
@@ -304,7 +279,6 @@ class _BottomNavBar extends StatelessWidget {
                 ),
               ),
 
-              // ── Center logo ──
               Positioned(
                 bottom: _barHeight + bottomPadding - _logoSize + _logoOverhang,
                 left: 0,
@@ -324,10 +298,6 @@ class _BottomNavBar extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// CENTER LOGO — spin + fire particles
-// ============================================
 
 class _CenterLogo extends StatefulWidget {
   final double size;
@@ -474,10 +444,6 @@ class _FirePainter extends CustomPainter {
   @override
   bool shouldRepaint(_FirePainter old) => progress != old.progress;
 }
-
-// ============================================
-// NAV ITEM
-// ============================================
 
 class _NavItem extends StatelessWidget {
   final String assetIcon;

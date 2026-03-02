@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/menu_model.dart';
-import 'package:superdriver/domain/services/menu_services.dart';
+import 'package:superdriver/data/services/menu_service.dart';
 
 part 'menu_event.dart';
 part 'menu_state.dart';

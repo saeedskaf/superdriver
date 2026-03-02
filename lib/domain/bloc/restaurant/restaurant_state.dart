@@ -7,10 +7,6 @@ abstract class RestaurantState extends Equatable {
   List<Object?> get props => [];
 }
 
-// ============================================
-// INITIAL & LOADING STATES
-// ============================================
-
 class RestaurantInitial extends RestaurantState {
   const RestaurantInitial();
 }
@@ -18,10 +14,6 @@ class RestaurantInitial extends RestaurantState {
 class RestaurantsLoading extends RestaurantState {
   const RestaurantsLoading();
 }
-
-// ============================================
-// RESTAURANTS LIST STATES
-// ============================================
 
 class RestaurantsLoaded extends RestaurantState {
   final List<RestaurantListItem> restaurants;
@@ -73,10 +65,6 @@ class RestaurantsError extends RestaurantState {
   List<Object?> get props => [message];
 }
 
-// ============================================
-// RESTAURANT DETAILS STATES
-// ============================================
-
 class RestaurantDetailsLoading extends RestaurantState {
   const RestaurantDetailsLoading();
 }
@@ -99,10 +87,6 @@ class RestaurantDetailsError extends RestaurantState {
   List<Object?> get props => [message];
 }
 
-// ============================================
-// CATEGORIES STATES
-// ============================================
-
 class CategoriesLoading extends RestaurantState {
   const CategoriesLoading();
 }
@@ -124,10 +108,6 @@ class CategoriesError extends RestaurantState {
   @override
   List<Object?> get props => [message];
 }
-
-// ============================================
-// NEARBY RESTAURANTS STATES
-// ============================================
 
 class NearbyRestaurantsLoading extends RestaurantState {
   const NearbyRestaurantsLoading();

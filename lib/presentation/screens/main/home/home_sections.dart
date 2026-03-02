@@ -5,13 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================================
-// BANNERS
-// ============================================================
 
 class BannersSection extends StatefulWidget {
   final List<Banner> banners;
@@ -135,10 +131,6 @@ class _BannersSectionState extends State<BannersSection> {
   }
 }
 
-// ============================================================
-// CATEGORIES — 4 per line
-// ============================================================
-
 class CategoriesSection extends StatelessWidget {
   final List<Category> categories;
   final ValueChanged<Category> onTap;
@@ -201,13 +193,6 @@ class CategoriesSection extends StatelessWidget {
   }
 }
 
-// ============================================================
-// RESTAURANTS — HORIZONTAL SCROLL
-//
-// Same RestaurantCard. Width = screen - 32 to match vertical.
-// Height = kRestaurantCardH + padding for shadow.
-// ============================================================
-
 class RestaurantsHorizontalSection extends StatelessWidget {
   final String title;
   final List<RestaurantListItem> restaurants;
@@ -260,12 +245,6 @@ class RestaurantsHorizontalSection extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// RESTAURANTS — VERTICAL LIST (paginated)
-//
-// Same RestaurantCard, full width, stacked vertically.
-// ============================================================
 
 class RestaurantsVerticalSection extends StatelessWidget {
   final String title;

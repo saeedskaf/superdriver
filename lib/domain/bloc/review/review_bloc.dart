@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/review_model.dart';
-import 'package:superdriver/domain/services/review_services.dart';
+import 'package:superdriver/data/services/review_service.dart';
 
 part 'review_event.dart';
 part 'review_state.dart';

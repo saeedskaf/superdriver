@@ -1,5 +1,6 @@
-// lib/domain/services/address_service.dart
+// lib/data/services/address_service.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:math';
@@ -14,7 +15,7 @@ class AddressService {
     final accessToken = await secureStorage.getAccessToken();
     return {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer $accessToken',
+      if (accessToken != null && accessToken.isNotEmpty) 'Authorization': 'Bearer $accessToken',
     };
   }
 
@@ -50,7 +51,7 @@ class AddressService {
     final uri = Uri.parse(Environment.governoratesEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     dev.log('GET Governorates Response Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
@@ -69,7 +70,7 @@ class AddressService {
     final uri = Uri.parse(Environment.addressesEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     final responseBody = jsonDecode(response.body);
     dev.log('GET All Addresses Response: $responseBody');
 
@@ -129,7 +130,7 @@ class AddressService {
       uri,
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     final responseBody = jsonDecode(response.body);
     dev.log('POST Add Address Response: $responseBody');
@@ -148,7 +149,7 @@ class AddressService {
     final uri = Uri.parse(Environment.addressByIdEndpoint(id));
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     final responseBody = jsonDecode(response.body);
     dev.log('GET Address by ID Response: $responseBody');
 
@@ -200,7 +201,7 @@ class AddressService {
       uri,
       headers: headers,
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     final responseBody = jsonDecode(response.body);
     dev.log('PATCH Update Address Response: $responseBody');
@@ -221,7 +222,7 @@ class AddressService {
     final uri = Uri.parse(Environment.addressByIdEndpoint(id));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers);
+    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
     dev.log('DELETE Address Response Status: ${response.statusCode}');
 
     if (response.statusCode == 204 || response.statusCode == 200) {
@@ -241,7 +242,7 @@ class AddressService {
     final uri = Uri.parse(Environment.setCurrentAddressEndpoint(id));
     final headers = await _getAuthHeaders();
 
-    final response = await http.post(uri, headers: headers);
+    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
     dev.log('POST Set Current Address Response Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
@@ -261,7 +262,7 @@ class AddressService {
     final uri = Uri.parse(Environment.currentAddressEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers);
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
     dev.log('GET Current Address Response Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {

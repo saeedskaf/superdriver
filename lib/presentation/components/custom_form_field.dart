@@ -5,10 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/phone_number.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ==================== FormFieldCustom ====================
 
 class FormFieldCustom extends StatefulWidget {
   final TextEditingController? controller;
@@ -234,8 +232,6 @@ class _FormFieldCustomState extends State<FormFieldCustom> {
     return widget.suffixIcon;
   }
 }
-
-// ==================== PhoneFieldCustom ====================
 
 class PhoneFieldCustom extends StatefulWidget {
   final String label;

@@ -6,8 +6,8 @@ import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/bloc/review/review_bloc.dart';
 import 'package:superdriver/domain/models/order_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/driver_review_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -122,8 +122,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── AppBar ──
-
   PreferredSizeWidget _buildAppBar(AppLocalizations l10n) {
     return AppBar(
       backgroundColor: ColorsCustom.surface,
@@ -164,8 +162,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ],
     );
   }
-
-  // ── Body ──
 
   Widget _buildBody(AppLocalizations l10n) {
     if (_isLoading) return _buildLoadingState();
@@ -256,8 +252,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Order Details ──
-
   Widget _buildOrderDetails(AppLocalizations l10n) {
     return RefreshIndicator(
       onRefresh: () async => _loadOrderDetails(),
@@ -273,7 +267,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             _buildStatusCard(l10n),
             if (_order!.isActive && !_order!.isCancelled) _buildTimeline(l10n),
 
-            // ── Rate / review (server controls via canReview) ──
             if (_order!.canReview && !_order!.isDriverRated)
               _buildRateDriverCard(l10n),
 
@@ -311,8 +304,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Section Title ──
-
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -324,8 +315,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Order Number Card ──
 
   Widget _buildOrderNumberCard(AppLocalizations l10n) {
     return _CardWrapper(
@@ -402,8 +391,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     _showSnackBar(context, 'تم نسخ رقم الطلب', isError: false);
   }
 
-  // ── Scheduled Delivery ──
-
   Widget _buildScheduledDeliveryCard(AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -474,8 +461,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     final timePart = DateFormat('HH:mm').format(dateTime);
     return '$dayPart ${l10n.atTime} $timePart';
   }
-
-  // ── Status Card ──
 
   Widget _buildStatusCard(AppLocalizations l10n) {
     final statusInfo = _getStatusInfo(_order!.status, l10n);
@@ -564,8 +549,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Rate Driver Card ──
-
   Widget _buildRateDriverCard(AppLocalizations l10n) {
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -644,8 +627,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     });
   }
 
-  // ── Timeline ──
-
   Widget _buildTimeline(AppLocalizations l10n) {
     final currentStatusIndex = _statusFlow.indexOf(_order!.status);
 
@@ -706,8 +687,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Restaurant Card ──
-
   Widget _buildRestaurantCard() {
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -753,8 +732,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Driver Card ──
 
   Widget _buildDriverCard(AppLocalizations l10n) {
     return _CardWrapper(
@@ -811,8 +788,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Address Card ──
 
   Widget _buildAddressCard(AppLocalizations l10n) {
     final address = _order!.addressSnapshot;
@@ -926,8 +901,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Contact Phone ──
-
   Widget _buildContactPhoneCard() {
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -959,8 +932,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Items List ──
 
   Widget _buildItemsList(AppLocalizations l10n) {
     if (_order!.items.isEmpty) {
@@ -1092,8 +1063,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Summary Card ──
-
   Widget _buildSummaryCard(AppLocalizations l10n) {
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1168,8 +1137,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Notes Card ──
-
   Widget _buildNotesCard() {
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1192,8 +1159,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Cancellation Card ──
 
   Widget _buildCancellationCard() {
     return Container(
@@ -1223,8 +1188,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Bottom Cancel ──
 
   Widget _buildBottomCancel(AppLocalizations l10n) {
     return Container(
@@ -1290,8 +1253,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
-
-  // ── Cancel Dialog ──
 
   void _showCancelDialog(BuildContext context, AppLocalizations l10n) {
     final reasonController = TextEditingController();
@@ -1395,8 +1356,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  // ── Helpers ──
-
   void _callPhone(String phone) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(phoneUri)) {
@@ -1461,10 +1420,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return DateFormat('dd/MM/yyyy - HH:mm').format(date);
   }
 }
-
-// ============================================
-// SHARED WIDGETS
-// ============================================
 
 class _CardWrapper extends StatelessWidget {
   final Widget child;

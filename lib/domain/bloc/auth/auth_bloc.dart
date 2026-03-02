@@ -1,8 +1,12 @@
+import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
+import 'package:superdriver/data/services/chat_service.dart';
+import 'package:superdriver/data/services/push_notification_service.dart';
 import 'package:superdriver/domain/models/user_model.dart';
-import 'package:superdriver/domain/services/auth_services.dart';
+import 'package:superdriver/data/services/auth_service.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -153,6 +157,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    try {
+      final userData = await secureStorage.getUserData();
+      final userId = userData['userId'];
+      final fcmToken = await pushNotificationService.getFcmToken();
+
+      // unregister from Django backend
+      await pushNotificationService.unregisterDeviceToken();
+
+      // remove FCM token from all user chat conversations
+      if (userId != null && userId.isNotEmpty && fcmToken != null) {
+        await chatService.removeFcmTokenForUserConversations(
+          userId: userId,
+          token: fcmToken,
+        );
+      }
+    } catch (e) {
+      log('Logout cleanup error: $e');
+    }
+
     await secureStorage.clearAuthData();
     emit(const AuthUnauthenticated());
   }

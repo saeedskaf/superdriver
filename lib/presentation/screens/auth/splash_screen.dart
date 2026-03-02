@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/main_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -100,8 +100,7 @@ class _SplashScreenState extends State<SplashScreen>
                   // Logo/Character
                   Image.asset(
                     'assets/icons/splash_tagline.png',
-                    width: 600,
-                    height: 600,
+                    width: MediaQuery.of(context).size.width * 0.8,
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 24),

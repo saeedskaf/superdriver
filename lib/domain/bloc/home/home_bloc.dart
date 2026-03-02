@@ -4,8 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
-import 'package:superdriver/domain/services/home_services.dart';
-import 'package:superdriver/domain/services/restaurant_services.dart';
+import 'package:superdriver/data/services/home_service.dart';
+import 'package:superdriver/data/services/restaurant_service.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -36,19 +36,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeUserLoggedOut>(_onUserLoggedOut);
   }
 
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
-  HomeLoaded _buildLoadedState({bool isLoadingMore = false}) => HomeLoaded(
-    homeData: _homeData!,
-    recommendedRestaurants: _recommendedRestaurants,
-    nearbyRestaurants: _nearbyRestaurants,
-    allRestaurants: _allRestaurants,
-    isAuthenticated: _isAuthenticated,
-    hasMoreRestaurants: _hasMore,
-    isLoadingMore: isLoadingMore,
-  );
+  HomeLoaded _buildLoadedState({bool isLoadingMore = false}) {
+    if (_homeData == null) {
+      throw StateError('Cannot build loaded state without home data');
+    }
+    return HomeLoaded(
+      homeData: _homeData!,
+      recommendedRestaurants: _recommendedRestaurants,
+      nearbyRestaurants: _nearbyRestaurants,
+      allRestaurants: _allRestaurants,
+      isAuthenticated: _isAuthenticated,
+      hasMoreRestaurants: _hasMore,
+      isLoadingMore: isLoadingMore,
+    );
+  }
 
   String _formatError(Object e) => e.toString().replaceAll('Exception: ', '');
 
@@ -100,10 +101,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     _hasMore = _allRestaurants.length >= _pageSize;
   }
-
-  // ============================================================
-  // EVENT HANDLERS
-  // ============================================================
 
   Future<void> _onLoad(HomeLoadRequested event, Emitter<HomeState> emit) async {
     _updateLocation(event.lat, event.lng);

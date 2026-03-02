@@ -5,16 +5,12 @@ import 'package:superdriver/domain/bloc/cart/cart_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/cart_detail_screen.dart';
-import 'package:superdriver/presentation/screens/main/home/home_widgets.dart';
+import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ============================================
-// CART SCREEN
-// ============================================
 
 class CartScreen extends StatefulWidget {
   final VoidCallback? onNavigateToHome;
@@ -26,9 +22,6 @@ class CartScreen extends StatefulWidget {
 }
 
 class CartScreenState extends State<CartScreen> {
-  // ── AuthCheckStatus removed: parent (MainScreen) already handles auth,
-  //    and the BlocBuilder below reacts to AuthBloc state changes anyway.
-
   @override
   void initState() {
     super.initState();
@@ -181,10 +174,6 @@ class CartScreenState extends State<CartScreen> {
   }
 }
 
-// ============================================
-// CART HEADER
-// ============================================
-
 class _CartHeader extends StatelessWidget {
   final VoidCallback onRefresh;
 
@@ -245,10 +234,6 @@ class _CartHeader extends StatelessWidget {
   }
 }
 
-// ============================================
-// NOT LOGGED IN VIEW
-// ============================================
-
 class _NotLoggedInView extends StatelessWidget {
   final VoidCallback onLogin;
 
@@ -307,10 +292,6 @@ class _NotLoggedInView extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// EMPTY CART VIEW
-// ============================================
 
 class _EmptyCartView extends StatelessWidget {
   final VoidCallback onBrowse;
@@ -374,10 +355,6 @@ class _EmptyCartView extends StatelessWidget {
   }
 }
 
-// ============================================
-// LOADING VIEW
-// ============================================
-
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
 
@@ -390,10 +367,6 @@ class _LoadingView extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// CARTS LIST
-// ============================================
 
 class _CartsList extends StatelessWidget {
   final List<CartSummary> carts;
@@ -428,10 +401,6 @@ class _CartsList extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// CART SUMMARY CARD
-// ============================================
 
 class _CartSummaryCard extends StatelessWidget {
   final CartSummary cart;
@@ -628,10 +597,6 @@ class _CartSummaryCard extends StatelessWidget {
   }
 }
 
-// ============================================
-// CART ITEM PREVIEW ROW
-// ============================================
-
 class _CartItemPreviewRow extends StatelessWidget {
   final CartItemPreview item;
 
@@ -683,10 +648,6 @@ class _CartItemPreviewRow extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// HELPER WIDGETS
-// ============================================
 
 class _RestaurantLogo extends StatelessWidget {
   final String? url;
@@ -797,10 +758,6 @@ class _StatusBanner extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// DELETE CART DIALOG
-// ============================================
 
 class _DeleteCartDialog extends StatelessWidget {
   final String cartName;

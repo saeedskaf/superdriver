@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/address/address_bloc.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
-import 'package:superdriver/presentation/components/text_custom.dart';
-import 'package:superdriver/presentation/components/btn_custom.dart';
+import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/profile/add_edit_address_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
@@ -109,8 +109,6 @@ class _AddressesScreenContent extends StatelessWidget {
       ),
     );
   }
-
-  // ── Body ──
 
   Widget _buildBody(
     BuildContext context,
@@ -224,8 +222,6 @@ class _AddressesScreenContent extends StatelessWidget {
     return _buildEmptyState(context, l10n);
   }
 
-  // ── Error State ──
-
   Widget _buildErrorState(
     BuildContext context,
     String message,
@@ -269,8 +265,6 @@ class _AddressesScreenContent extends StatelessWidget {
       ),
     );
   }
-
-  // ── Empty State ──
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(
@@ -321,8 +315,6 @@ class _AddressesScreenContent extends StatelessWidget {
     );
   }
 
-  // ── Navigation ──
-
   void _navigateToAddAddress(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final bloc = context.read<AddressBloc>();
@@ -366,8 +358,6 @@ class _AddressesScreenContent extends StatelessWidget {
     }
     bloc.add(const AddressListRequested());
   }
-
-  // ── Delete Dialog ──
 
   void _showDeleteDialog(
     BuildContext context,
@@ -443,10 +433,6 @@ class _AddressesScreenContent extends StatelessWidget {
     );
   }
 }
-
-// ============================================
-// ADDRESS CARD
-// ============================================
 
 class _AddressCard extends StatelessWidget {
   final AddressSummary address;
