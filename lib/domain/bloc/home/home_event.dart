@@ -22,8 +22,9 @@ class HomeLoadRequested extends HomeEvent {
 class HomeRefreshRequested extends HomeEvent {
   final double? lat;
   final double? lng;
+  final Completer<void>? completer;
 
-  const HomeRefreshRequested({this.lat, this.lng});
+  const HomeRefreshRequested({this.lat, this.lng, this.completer});
 
   @override
   List<Object?> get props => [lat, lng];

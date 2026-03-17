@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:superdriver/data/services/chat_service.dart';
@@ -23,70 +24,233 @@ class ChatConversationScreen extends StatefulWidget {
 }
 
 class _ChatConversationScreenState extends State<ChatConversationScreen> {
+  static const int _messagesPageSize = 25;
+
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _messageFocusNode = FocusNode();
   final _imagePicker = ImagePicker();
-  StreamSubscription<List<ChatMessage>>? _messagesSub;
+  StreamSubscription<List<ChatMessage>>? _latestMessagesSub;
   bool _isInitializing = true;
   bool _sessionUnavailable = false;
   String? _userId;
   bool _isSending = false;
+  bool _isLoadingMessages = true;
+  bool _isLoadingMoreMessages = false;
+  bool _hasMoreMessages = true;
+  bool _isMarkingRead = false;
+  String? _messagesError;
+  List<ChatMessage> _messages = const [];
+  DocumentSnapshot? _oldestMessageDoc;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _init();
   }
 
   @override
   void dispose() {
-    _messagesSub?.cancel();
+    _latestMessagesSub?.cancel();
+    _scrollController.removeListener(_onScroll);
     _controller.dispose();
     _scrollController.dispose();
+    _messageFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _init() async {
-    final session = await loadChatSession(context);
-    if (session == null) {
+    try {
+      final session = await loadChatSession(context);
+      if (session == null) {
+        if (!mounted) return;
+        setState(() => _sessionUnavailable = true);
+        return;
+      }
+
+      _userId = session.userId;
+
+      await _markConversationAsRead();
+
+      final fcmToken = await pushNotificationService.getFcmToken();
+      if (fcmToken != null) {
+        try {
+          final locale =
+              Localizations.localeOf(context).languageCode;
+          await chatService.saveFcmToken(
+            conversationId: widget.conversationId,
+            token: fcmToken,
+            locale: locale,
+          );
+        } catch (e, stackTrace) {
+          log(
+            'ChatConversationScreen: save FCM token failed: $e',
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
+      await _loadInitialMessages();
+
+      _latestMessagesSub = chatService
+          .latestMessagesStream(widget.conversationId, limit: _messagesPageSize)
+          .listen(
+            (latestMessages) {
+              if (!mounted) return;
+              setState(() {
+                _messages = _mergeMessages(
+                  current: _messages,
+                  incoming: latestMessages,
+                );
+                _messagesError = null;
+              });
+              _markAdminMessagesAsRead(latestMessages);
+            },
+            onError: (error, stackTrace) {
+              log(
+                'ChatConversationScreen: messages stream failed: $error',
+                stackTrace: stackTrace,
+              );
+              if (!mounted) return;
+              setState(
+                () => _messagesError = AppLocalizations.of(
+                  context,
+                )?.chatMessagesLoadError,
+              );
+            },
+          );
+    } catch (e, stackTrace) {
+      log('ChatConversationScreen: init failed: $e', stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(
+        () => _messagesError = AppLocalizations.of(
+          context,
+        )?.chatMessagesLoadError,
+      );
+    } finally {
+      if (mounted) setState(() => _isInitializing = false);
+    }
+  }
+
+  Future<void> _loadInitialMessages() async {
+    setState(() {
+      _isLoadingMessages = true;
+      _messagesError = null;
+    });
+
+    try {
+      final page = await chatService.fetchMessagesPage(
+        widget.conversationId,
+        limit: _messagesPageSize,
+      );
+
       if (!mounted) return;
       setState(() {
-        _isInitializing = false;
-        _sessionUnavailable = true;
+        _messages = page.messages;
+        _oldestMessageDoc = page.lastDocument;
+        _hasMoreMessages = page.hasMore;
+        _isLoadingMessages = false;
       });
-      return;
-    }
-
-    _userId = session.userId;
-    await chatService.markAsReadByUser(widget.conversationId);
-
-    final fcmToken = await pushNotificationService.getFcmToken();
-    if (fcmToken != null) {
-      await chatService.saveFcmToken(
-        conversationId: widget.conversationId,
-        token: fcmToken,
+      _markAdminMessagesAsRead(page.messages);
+    } catch (e, stackTrace) {
+      log(
+        'ChatConversationScreen: initial messages load failed: $e',
+        stackTrace: stackTrace,
       );
+      if (!mounted) return;
+      setState(() {
+        _messagesError = AppLocalizations.of(context)!.chatMessagesLoadError;
+        _isLoadingMessages = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    if (_isLoadingMoreMessages || !_hasMoreMessages) return;
+    final cursor = _oldestMessageDoc;
+    if (cursor == null) return;
+
+    setState(() => _isLoadingMoreMessages = true);
+    try {
+      final page = await chatService.fetchMessagesPage(
+        widget.conversationId,
+        startAfter: cursor,
+        limit: _messagesPageSize,
+      );
+
+      if (!mounted) return;
+
+      final existingIds = _messages.map((m) => m.id).toSet();
+      final olderMessages = page.messages
+          .where((message) => !existingIds.contains(message.id))
+          .toList();
+
+      setState(() {
+        _messages = [..._messages, ...olderMessages];
+        _oldestMessageDoc = page.lastDocument ?? _oldestMessageDoc;
+        _hasMoreMessages = page.hasMore;
+        _isLoadingMoreMessages = false;
+      });
+      _markAdminMessagesAsRead(olderMessages);
+    } catch (e, stackTrace) {
+      log(
+        'ChatConversationScreen: load more messages failed: $e',
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      setState(() => _isLoadingMoreMessages = false);
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent < 120) return;
+    final threshold = position.maxScrollExtent - 140;
+    if (position.pixels >= threshold) {
+      _loadMoreMessages();
+    }
+  }
+
+  void _markAdminMessagesAsRead(List<ChatMessage> messages) {
+    final hasUnreadAdmin = messages.any((m) => m.isAdmin && !m.isRead);
+    if (hasUnreadAdmin && !_isMarkingRead) {
+      _markConversationAsRead();
+    }
+  }
+
+  Future<void> _markConversationAsRead() async {
+    if (_isMarkingRead) return;
+    _isMarkingRead = true;
+    try {
+      await chatService.markAsReadByUser(widget.conversationId);
+    } catch (e, stackTrace) {
+      log(
+        'ChatConversationScreen: mark-as-read failed: $e',
+        stackTrace: stackTrace,
+      );
+    } finally {
+      _isMarkingRead = false;
+    }
+  }
+
+  List<ChatMessage> _mergeMessages({
+    required List<ChatMessage> current,
+    required List<ChatMessage> incoming,
+  }) {
+    final mergedById = {for (final message in current) message.id: message};
+    for (final message in incoming) {
+      mergedById[message.id] = message;
     }
 
-    _messagesSub = chatService
-        .messagesStream(widget.conversationId)
-        .listen(
-          (messages) {
-            final hasUnreadAdmin = messages.any((m) => m.isAdmin && !m.isRead);
-            if (hasUnreadAdmin) {
-              chatService.markAsReadByUser(widget.conversationId);
-            }
-          },
-          onError: (error, stackTrace) {
-            log(
-              'ChatConversationScreen: messages stream failed: $error',
-              stackTrace: stackTrace,
-            );
-          },
-        );
-
-    if (!mounted) return;
-    setState(() => _isInitializing = false);
+    final merged = mergedById.values.toList();
+    merged.sort((a, b) {
+      final compare = b.createdAt.compareTo(a.createdAt);
+      if (compare != 0) return compare;
+      return b.id.compareTo(a.id);
+    });
+    return merged;
   }
 
   Future<void> _sendText() async {
@@ -102,10 +266,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         senderId: userId,
         text: text,
       );
-    } catch (_) {
-      if (mounted) _controller.text = text;
+    } catch (e) {
+      if (!mounted) return;
+      _controller.text = text;
+      final l10n = AppLocalizations.of(context)!;
+      final raw = e.toString().replaceFirst('Exception: ', '').trim();
+      final message = raw.toLowerCase().contains('closed')
+          ? l10n.chatConversationClosed
+          : (raw.isNotEmpty ? raw : l10n.chatMessagesLoadError);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: ColorsCustom.error),
+      );
     } finally {
-      if (mounted) setState(() => _isSending = false);
+      if (!mounted) return;
+      setState(() => _isSending = false);
     }
   }
 
@@ -130,7 +304,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         senderId: userId,
         imageFile: File(picked.path),
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      log(
+        'ChatConversationScreen: image send failed: $e',
+        stackTrace: stackTrace,
+      );
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -210,9 +388,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: ColorsCustom.chatBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F7FB),
+        backgroundColor: ColorsCustom.chatBackground,
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.all(8),
@@ -333,121 +511,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                                 ),
                               ),
                             ),
-                            StreamBuilder<List<ChatMessage>>(
-                              stream: chatService.messagesStream(
-                                widget.conversationId,
-                              ),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                      color: ColorsCustom.primary,
-                                    ),
-                                  );
-                                }
-
-                                if (snapshot.hasError) {
-                                  log(
-                                    'ChatConversationScreen: failed to load messages: ${snapshot.error}',
-                                  );
-                                  return Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.error_outline_rounded,
-                                            color: ColorsCustom.error,
-                                            size: 46,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextCustom(
-                                            text: l10n.chatMessagesLoadError,
-                                            fontSize: 13,
-                                            color: ColorsCustom.textPrimary,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                final messages = snapshot.data ?? const [];
-                                if (messages.isEmpty) {
-                                  return Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            width: 64,
-                                            height: 64,
-                                            decoration: BoxDecoration(
-                                              color: ColorsCustom.primarySoft,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: ColorsCustom.primary
-                                                    .withAlpha(30),
-                                              ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.chat_bubble_outline_rounded,
-                                              color: ColorsCustom.primary,
-                                              size: 28,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 14),
-                                          TextCustom(
-                                            text: l10n.chatEmptyConversation,
-                                            fontSize: 13,
-                                            color: ColorsCustom.textSecondary,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                return ListView.builder(
-                                  controller: _scrollController,
-                                  reverse: true,
-                                  keyboardDismissBehavior:
-                                      ScrollViewKeyboardDismissBehavior.onDrag,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    14,
-                                    16,
-                                    14,
-                                  ),
-                                  itemCount: messages.length,
-                                  itemBuilder: (context, index) {
-                                    final message = messages[index];
-                                    final showDateSep = _shouldShowDate(
-                                      messages,
-                                      index,
-                                    );
-
-                                    return Column(
-                                      children: [
-                                        if (showDateSep)
-                                          _DateSeparator(
-                                            date: message.createdAt,
-                                          ),
-                                        _MessageBubble(
-                                          message: message,
-                                          onImageTap: _openImageViewer,
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                            ),
+                            _buildMessagesList(l10n),
                           ],
                         ),
                       ),
@@ -464,6 +528,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       }
                       return _InputBar(
                         controller: _controller,
+                        focusNode: _messageFocusNode,
                         isSending: _isSending,
                         hintText: l10n.chatHint,
                         onSend: _sendText,
@@ -485,10 +550,118 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         current.month != next.month ||
         current.day != next.day;
   }
+
+  Widget _buildMessagesList(AppLocalizations l10n) {
+    if (_isLoadingMessages) {
+      return const Center(
+        child: CircularProgressIndicator(color: ColorsCustom.primary),
+      );
+    }
+
+    if (_messagesError != null && _messages.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: ColorsCustom.error,
+                size: 46,
+              ),
+              const SizedBox(height: 12),
+              TextCustom(
+                text: _messagesError!,
+                fontSize: 13,
+                color: ColorsCustom.textPrimary,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _loadInitialMessages,
+                child: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_messages.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: ColorsCustom.primarySoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: ColorsCustom.primary.withAlpha(30)),
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: ColorsCustom.primary,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextCustom(
+                text: l10n.chatEmptyConversation,
+                fontSize: 13,
+                color: ColorsCustom.textSecondary,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      reverse: true,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      itemCount: _messages.length + (_isLoadingMoreMessages ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _messages.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: ColorsCustom.primary,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final message = _messages[index];
+        final showDateSep = _shouldShowDate(_messages, index);
+
+        return Column(
+          children: [
+            if (showDateSep) _DateSeparator(date: message.createdAt),
+            _MessageBubble(message: message, onImageTap: _openImageViewer),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool isSending;
   final String hintText;
   final VoidCallback onSend;
@@ -496,6 +669,7 @@ class _InputBar extends StatelessWidget {
 
   const _InputBar({
     required this.controller,
+    required this.focusNode,
     required this.isSending,
     required this.hintText,
     required this.onSend,
@@ -515,7 +689,7 @@ class _InputBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE7EBF3)),
+        border: Border.all(color: ColorsCustom.chatDivider),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(8),
@@ -547,16 +721,17 @@ class _InputBar extends StatelessWidget {
             child: Container(
               constraints: const BoxConstraints(minHeight: 42),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F5F9),
+                color: ColorsCustom.chatInput,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE3E7EF)),
+                border: Border.all(color: ColorsCustom.chatBorder),
               ),
               child: TextField(
                 controller: controller,
+                focusNode: focusNode,
                 textInputAction: TextInputAction.send,
                 minLines: 1,
                 maxLines: 4,
-                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                onEditingComplete: () {},
                 onSubmitted: (_) => onSend(),
                 style: const TextStyle(
                   fontSize: 13,
@@ -628,9 +803,9 @@ class _ClosedBanner extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F4F8),
+        color: ColorsCustom.chatChip,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE3E7EF)),
+        border: Border.all(color: ColorsCustom.chatBorder),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -680,12 +855,12 @@ class _ConversationHeader extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFFFFF), Color(0xFFF9FBFF)],
+          colors: [ColorsCustom.surface, ColorsCustom.chatBackground],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE7EBF3)),
+        border: Border.all(color: ColorsCustom.chatDivider),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(8),
@@ -697,20 +872,20 @@ class _ConversationHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: isOrder
                   ? ColorsCustom.secondarySoft
-                  : ColorsCustom.error.withAlpha(28),
-              borderRadius: BorderRadius.circular(13),
+                  : ColorsCustom.primarySoft,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               isOrder
                   ? Icons.shopping_bag_rounded
                   : Icons.report_problem_rounded,
               color: isOrder ? ColorsCustom.secondaryDark : ColorsCustom.error,
-              size: 20,
+              size: 22,
             ),
           ),
           const SizedBox(width: 12),
@@ -781,7 +956,7 @@ class _DateSeparator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: Color(0xFFE3E7EF), height: 1)),
+          const Expanded(child: Divider(color: ColorsCustom.chatBorder, height: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: TextCustom(
@@ -791,7 +966,7 @@ class _DateSeparator extends StatelessWidget {
               color: ColorsCustom.textHint,
             ),
           ),
-          const Expanded(child: Divider(color: Color(0xFFE3E7EF), height: 1)),
+          const Expanded(child: Divider(color: ColorsCustom.chatBorder, height: 1)),
         ],
       ),
     );
@@ -827,7 +1002,7 @@ class _MessageBubble extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F4F8),
+              color: ColorsCustom.chatChip,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -867,14 +1042,14 @@ class _MessageBubble extends StatelessWidget {
               ? const EdgeInsets.all(4)
               : const EdgeInsets.fromLTRB(14, 11, 14, 8),
           decoration: BoxDecoration(
-            color: isUser ? ColorsCustom.primary : const Color(0xFFF5F7FB),
+            color: isUser ? ColorsCustom.primary : ColorsCustom.chatBubble,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
               bottomLeft: Radius.circular(isUser ? 18 : 6),
               bottomRight: Radius.circular(isUser ? 6 : 18),
             ),
-            border: isUser ? null : Border.all(color: const Color(0xFFE4E8F0)),
+            border: isUser ? null : Border.all(color: ColorsCustom.chatBorder),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withAlpha(6),

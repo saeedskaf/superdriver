@@ -16,6 +16,7 @@ import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/cart_detail_screen.dart';
 import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -91,7 +92,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     setState(() => _query = q);
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 400), () {
-      if (_rest != null && _cats.isNotEmpty) {
+      if (_rest != null && _cats.isNotEmpty && _catIdx < _cats.length) {
         _loadProducts(_rest!.id, _cats[_catIdx].id);
       }
     });
@@ -191,6 +192,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   void _showProductDetail(ProductSimpleMenu p) {
+    inAppMessagingService.triggerEvent('product_viewed');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -257,11 +259,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         left: 12,
         right: 12,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ColorsCustom.surface,
         border: Border(
           bottom: BorderSide(color: ColorsCustom.border, width: 0.5),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -295,6 +304,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           BlocListener<RestaurantBloc, RestaurantState>(
             listener: (_, s) {
               if (s is RestaurantDetailsLoaded) {
+                inAppMessagingService.triggerEvent('restaurant_viewed');
                 _rest = s.restaurant;
                 context.read<MenuBloc>().add(
                   MenuCategoriesLoadRequested(restaurantId: s.restaurant.id),
@@ -306,9 +316,16 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           BlocListener<MenuBloc, MenuState>(
             listener: (_, s) {
               if (s is MenuCategoriesLoaded) {
-                setState(() => _cats = s.categories);
+                setState(() {
+                  _cats = s.categories;
+                  if (_cats.isEmpty) {
+                    _catIdx = 0;
+                  } else if (_catIdx >= _cats.length) {
+                    _catIdx = 0;
+                  }
+                });
                 if (_cats.isNotEmpty && _rest != null) {
-                  _loadProducts(_rest!.id, _cats[0].id);
+                  _loadProducts(_rest!.id, _cats[_catIdx].id);
                 }
               }
             },
@@ -411,9 +428,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         onChanged: (t) => setState(() => _tab = t),
                       ),
                       const SizedBox(height: 4),
-                      _tab == 0
-                          ? _menuInline(l10n, r)
-                          : _InfoTab(restaurant: r),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: _tab == 0
+                            ? _menuInline(l10n, r)
+                            : _InfoTab(restaurant: r),
+                      ),
                     ],
                   ),
                 ),
@@ -667,9 +687,9 @@ class _CoverWithLogo extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(38),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withAlpha(48),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -691,7 +711,7 @@ class _CoverWithLogo extends StatelessWidget {
   }
 
   Widget _coverPlaceholder() => Container(
-    color: ColorsCustom.primarySoft,
+    color: ColorsCustom.surfaceVariant,
     child: const Center(
       child: Icon(
         Icons.restaurant_rounded,
@@ -722,10 +742,18 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
             decoration: BoxDecoration(
               color: ColorsCustom.surface,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: ColorsCustom.border, width: 0.9),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(10),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -781,6 +809,13 @@ class _InfoCard extends StatelessWidget {
                 color: ColorsCustom.secondarySoft,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: ColorsCustom.secondary.withAlpha(51)),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorsCustom.secondary.withAlpha(28),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -883,10 +918,11 @@ class _TabBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: ColorsCustom.surfaceVariant,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: ColorsCustom.border),
       ),
       child: Row(
         children: [
@@ -929,7 +965,16 @@ class _TabItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: active ? ColorsCustom.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: ColorsCustom.primary.withAlpha(46),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -969,7 +1014,7 @@ class _CatChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 42,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -985,10 +1030,20 @@ class _CatChips extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: sel ? ColorsCustom.primary : ColorsCustom.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(21),
                 border: Border.all(
                   color: sel ? ColorsCustom.primary : ColorsCustom.border,
+                  width: sel ? 1 : 0.9,
                 ),
+                boxShadow: sel
+                    ? [
+                        BoxShadow(
+                          color: ColorsCustom.primary.withAlpha(36),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
               ),
               child: Center(
                 child: TextCustom(
@@ -1025,8 +1080,16 @@ class _SearchField extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: ColorsCustom.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
+        color: ColorsCustom.surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: ColorsCustom.border, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: TextField(
         controller: controller,
@@ -1047,7 +1110,7 @@ class _SearchField extends StatelessWidget {
           ),
           prefixIcon: const Icon(
             Icons.search_rounded,
-            color: ColorsCustom.textHint,
+            color: ColorsCustom.primary,
             size: 20,
           ),
           suffixIcon: controller.text.isNotEmpty
@@ -1141,11 +1204,12 @@ class _ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: ColorsCustom.surface,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: ColorsCustom.border.withAlpha(120)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(available ? 13 : 5),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withAlpha(available ? 14 : 7),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -1640,6 +1704,13 @@ class _CartBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: ColorsCustom.primary,
                 borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorsCustom.primary.withAlpha(76),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -1670,7 +1741,7 @@ class _CartBar extends StatelessWidget {
                   ),
                   TextCustom(
                     text:
-                        '${cart.totalDouble.toStringAsFixed(0)} ${l10n.currency}',
+                        '${cart.subtotalDouble.toStringAsFixed(0)} ${l10n.currency}',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,

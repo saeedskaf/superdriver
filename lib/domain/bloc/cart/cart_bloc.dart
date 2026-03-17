@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
 import 'package:superdriver/data/services/cart_service.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 
 part 'cart_event.dart';
 part 'cart_state.dart';
@@ -52,6 +53,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           errorMsg.contains('404') ||
           errorMsg.contains('does not exist') ||
           errorMsg.contains('no cart')) {
+        _currentCart = null;
+        _currentRestaurantId = null;
         emit(const CartEmpty());
       } else {
         emit(CartError(errorMsg));
@@ -97,6 +100,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       _currentCart = cart;
       _currentRestaurantId = event.restaurantId;
 
+      inAppMessagingService.triggerEvent('item_added_to_cart');
       emit(
         CartOperationSuccess(cart: cart, message: 'تمت إضافة المنتج إلى السلة'),
       );
@@ -140,7 +144,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
 
     try {
-      final cart = await cartServices.deleteCartItem(event.itemId);
+      final cart = await cartServices.deleteCartItem(
+        event.itemId,
+        cartId: _currentCart?.id,
+        restaurantId: _currentRestaurantId,
+      );
       _currentCart = cart;
 
       if (cart.isEmpty) {
@@ -220,8 +228,24 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     emit(const CartLoading());
     try {
       final isValid = await cartServices.validateCart(event.cartId);
-      if (isValid && _currentCart != null) {
+      if (!isValid) {
+        emit(const CartError('Cart validation failed'));
+        return;
+      }
+
+      if (_currentCart != null) {
         emit(CartValidated(cart: _currentCart!));
+        return;
+      }
+
+      final cart = await cartServices.getCart(cartId: event.cartId);
+      _currentCart = cart;
+      _currentRestaurantId = cart.restaurant?.id;
+
+      if (cart.isEmpty) {
+        emit(const CartEmpty());
+      } else {
+        emit(CartValidated(cart: cart));
       }
     } catch (e) {
       if (_currentCart != null) {

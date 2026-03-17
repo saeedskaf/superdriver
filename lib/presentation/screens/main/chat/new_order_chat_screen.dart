@@ -35,7 +35,6 @@ class _NewOrderChatScreenState extends State<NewOrderChatScreen> {
   }
 
   Future<void> _loadAddresses() async {
-    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -52,7 +51,7 @@ class _NewOrderChatScreenState extends State<NewOrderChatScreen> {
       log('NewOrderChatScreen: failed to load addresses: $e');
       if (!mounted) return;
       setState(() {
-        _error = l10n.chatConversationsLoadError;
+        _error = 'load_failed';
         _isLoading = false;
       });
     }
@@ -257,7 +256,7 @@ class _NewOrderChatScreenState extends State<NewOrderChatScreen> {
                 )
               else if (_error != null)
                 _InfoState(
-                  title: _error!,
+                  title: l10n.chatConversationsLoadError,
                   body: l10n.chatNoAddressesBody,
                   actionLabel: l10n.chatAddAddress,
                   onAction: _openAddAddress,

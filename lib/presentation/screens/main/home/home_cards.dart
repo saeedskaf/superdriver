@@ -84,9 +84,9 @@ class NetworkImg extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: const Color(0xFFF3F4F6),
+      color: ColorsCustom.surfaceVariant,
       child: Center(
-        child: Icon(icon, size: iconSize, color: const Color(0xFFD1D5DB)),
+        child: Icon(icon, size: iconSize, color: ColorsCustom.border),
       ),
     );
   }
@@ -113,32 +113,33 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 3,
-            height: 22,
+            width: 4,
+            height: 24,
             decoration: BoxDecoration(
               color: ColorsCustom.primary,
-              borderRadius: BorderRadius.circular(1.5),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 9),
           Expanded(
             child: TextCustom(
               text: title,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
               color: ColorsCustom.textPrimary,
             ),
           ),
           if (showSeeAll && onSeeAllTap != null)
-            GestureDetector(
+            InkWell(
               onTap: onSeeAllTap,
+              borderRadius: BorderRadius.circular(20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextCustom(
                     text: l10n.seeAll,
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     color: ColorsCustom.primary,
                   ),
                   const SizedBox(width: 4),
@@ -184,53 +185,64 @@ class CategoryCard extends StatelessWidget {
     );
     final imageUrl = getFullImageUrl(category.image);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: ColorsCustom.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ColorsCustom.border, width: 0.5),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: ColorsCustom.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: ColorsCustom.border, width: 0.8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(8),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: 80,
+                        height: 80,
+                        placeholder: (_, __) => _catFallback(),
+                        errorWidget: (_, __, ___) => _catFallback(),
+                      )
+                    : _catFallback(),
+              ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      width: 80,
-                      height: 80,
-                      placeholder: (_, __) => _catFallback(),
-                      errorWidget: (_, __, ___) => _catFallback(),
-                    )
-                  : _catFallback(),
+            const SizedBox(height: 7),
+            SizedBox(
+              width: double.infinity,
+              child: TextCustom(
+                text: name,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: ColorsCustom.textPrimary,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            child: TextCustom(
-              text: name,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: ColorsCustom.textPrimary,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   static Widget _catFallback() {
     return Container(
-      color: const Color(0xFFF3F4F6),
+      color: ColorsCustom.surfaceVariant,
       child: const Center(
         child: Icon(
           Icons.restaurant_rounded,
@@ -271,10 +283,21 @@ class RestaurantCard extends StatelessWidget {
     );
     final logoUrl = getFullImageUrl(restaurant.logo);
     final coverUrl = getFullImageUrl(restaurant.coverImage);
-    final isClosed = !restaurant.isCurrentlyOpen;
     final hasDiscount =
         restaurant.hasDiscount && (restaurant.currentDiscount ?? 0) > 0;
     final discount = (restaurant.currentDiscount ?? 0).toInt();
+    final categories = restaurant.categoriesData
+        .map(
+          (category) => getLocalizedName(
+            context,
+            name: category.categoryName,
+            nameEn: category.categoryNameEn,
+          ),
+        )
+        .where((name) => name.trim().isNotEmpty)
+        .take(2)
+        .toList();
+    final categoriesLabel = categories.join(' • ');
 
     return GestureDetector(
       onTap: onTap,
@@ -282,12 +305,13 @@ class RestaurantCard extends StatelessWidget {
         height: kRestaurantCardH,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: ColorsCustom.border.withAlpha(120)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(12),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
+              color: Colors.black.withAlpha(14),
+              blurRadius: 24,
+              offset: const Offset(0, 6),
             ),
             BoxShadow(
               color: Colors.black.withAlpha(5),
@@ -300,12 +324,11 @@ class RestaurantCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               child: Column(
                 children: [
                   _CardCover(
                     coverUrl: coverUrl,
-                    isClosed: isClosed,
                     hasDiscount: hasDiscount,
                     discount: discount,
                     isFreeDelivery: restaurant.isFreeDelivery,
@@ -332,6 +355,17 @@ class RestaurantCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: Colors.black,
                           ),
+                          if (categoriesLabel.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            TextCustom(
+                              text: categoriesLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: ColorsCustom.textHint,
+                            ),
+                          ],
 
                           const Spacer(),
                           _DeliveryRow(restaurant: restaurant, l10n: l10n),
@@ -360,7 +394,6 @@ class RestaurantCard extends StatelessWidget {
 
 class _CardCover extends StatelessWidget {
   final String coverUrl;
-  final bool isClosed;
   final bool hasDiscount;
   final int discount;
   final bool isFreeDelivery;
@@ -368,7 +401,6 @@ class _CardCover extends StatelessWidget {
 
   const _CardCover({
     required this.coverUrl,
-    required this.isClosed,
     required this.hasDiscount,
     required this.discount,
     required this.isFreeDelivery,
@@ -385,36 +417,7 @@ class _CardCover extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ColorFiltered(
-            colorFilter: isClosed
-                ? const ColorFilter.matrix(<double>[
-                    0.2126,
-                    0.7152,
-                    0.0722,
-                    0,
-                    0,
-                    0.2126,
-                    0.7152,
-                    0.0722,
-                    0,
-                    0,
-                    0.2126,
-                    0.7152,
-                    0.0722,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    1,
-                    0,
-                  ])
-                : const ColorFilter.mode(
-                    Colors.transparent,
-                    BlendMode.multiply,
-                  ),
-            child: NetworkImg(url: coverUrl, height: _kCoverH),
-          ),
+          NetworkImg(url: coverUrl, height: _kCoverH),
 
           Positioned(
             left: 0,
@@ -525,14 +528,14 @@ class _DeliveryRow extends StatelessWidget {
           const Icon(
             Icons.schedule_rounded,
             size: 13,
-            color: Color(0xFF9CA3AF),
+            color: ColorsCustom.textHint,
           ),
           const SizedBox(width: 3),
           TextCustom(
             text: '${restaurant.deliveryTimeEstimate!} ${l10n.minute}',
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF6B7280),
+            color: ColorsCustom.textSecondary,
           ),
         ],
 
@@ -543,7 +546,7 @@ class _DeliveryRow extends StatelessWidget {
               text: '·',
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: const Color(0xFFD1D5DB),
+              color: ColorsCustom.border,
             ),
           ),
 
@@ -551,14 +554,14 @@ class _DeliveryRow extends StatelessWidget {
           const Icon(
             Icons.delivery_dining_rounded,
             size: 13,
-            color: Color(0xFF9CA3AF),
+            color: ColorsCustom.textHint,
           ),
           const SizedBox(width: 3),
           TextCustom(
             text: '${fee.toStringAsFixed(0)} ${l10n.currency}',
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF6B7280),
+            color: ColorsCustom.textSecondary,
           ),
         ],
       ],
@@ -609,8 +612,8 @@ class _Logo extends StatelessWidget {
               height: 14,
               decoration: BoxDecoration(
                 color: isCurrentlyOpen
-                    ? const Color(0xFF22C55E)
-                    : const Color(0xFF9CA3AF),
+                    ? ColorsCustom.success
+                    : ColorsCustom.textHint,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
@@ -827,9 +830,9 @@ class _HomeLoadingViewState extends State<HomeLoadingView>
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: const [
-            Color(0xFFEEEEEE),
-            Color(0xFFF5F5F5),
-            Color(0xFFEEEEEE),
+            ColorsCustom.border,
+            ColorsCustom.surfaceVariant,
+            ColorsCustom.border,
           ],
           stops: [
             (_shimmerCtrl.value - 0.3).clamp(0.0, 1.0),

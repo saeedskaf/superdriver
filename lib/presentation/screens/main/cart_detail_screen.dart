@@ -13,6 +13,7 @@ import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/checkout_screen.dart';
 import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 class CartDetailScreen extends StatefulWidget {
@@ -38,6 +39,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
 
   // Items dismissed via swipe, hidden before server confirms
   final Set<int> _dismissedItemIds = {};
+  final Set<int> _pendingRemovalItemIds = {};
 
   @override
   void initState() {
@@ -57,10 +59,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     return authState is AuthAuthenticated;
   }
 
-  bool _isArabic(BuildContext context) {
-    return Localizations.localeOf(context).languageCode == 'ar';
-  }
-
   @override
   void dispose() {
     _couponController.dispose();
@@ -70,7 +68,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isArabic = _isArabic(context);
 
     return Scaffold(
       backgroundColor: ColorsCustom.background,
@@ -93,6 +90,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
               if (freshCart != null) {
                 _lastCart = freshCart;
                 _dismissedItemIds.clear();
+                _pendingRemovalItemIds.clear();
               }
               final cart = freshCart ?? _lastCart;
 
@@ -114,7 +112,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
                     child: RefreshIndicator(
                       onRefresh: () async => _loadCartIfAuthenticated(),
                       color: ColorsCustom.primary,
-                      child: _buildCartContent(l10n, cart, state, isArabic),
+                      child: _buildCartContent(l10n, cart, state),
                     ),
                   ),
                   _CheckoutSection(
@@ -134,11 +132,25 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (state is CartError) {
+      if (_pendingRemovalItemIds.isNotEmpty) {
+        setState(() {
+          _dismissedItemIds.removeAll(_pendingRemovalItemIds);
+          _pendingRemovalItemIds.clear();
+        });
+      }
       if (_lastCart == null || _lastCart!.isEmpty) return;
       _showSnackBar(context, state.message, isError: true);
+    } else if (state is CartLoaded || state is CartEmpty) {
+      if (_pendingRemovalItemIds.isNotEmpty) {
+        setState(() => _pendingRemovalItemIds.clear());
+      }
     } else if (state is CartOperationSuccess) {
+      if (_pendingRemovalItemIds.isNotEmpty) {
+        setState(() => _pendingRemovalItemIds.clear());
+      }
       _showSnackBar(context, state.message, isError: false);
     } else if (state is CartCouponApplied) {
+      inAppMessagingService.triggerEvent('coupon_applied');
       setState(() => _showCouponField = false);
       _couponController.clear();
       _showSnackBar(context, l10n.couponApplied, isError: false);
@@ -150,7 +162,9 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   PreferredSizeWidget _buildAppBar(AppLocalizations l10n) {
     return AppBar(
       backgroundColor: ColorsCustom.surface,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
+      scrolledUnderElevation: 0,
       leading: const _BackButton(),
       title: TextCustom(
         text: l10n.cartDetails,
@@ -164,18 +178,24 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
     );
   }
 
-  Widget _buildCartContent(
-    AppLocalizations l10n,
-    Cart cart,
-    CartState state,
-    bool isArabic,
-  ) {
+  Widget _buildCartContent(AppLocalizations l10n, Cart cart, CartState state) {
+    final bottomListSpace = MediaQuery.of(context).padding.bottom + 24;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomListSpace),
       children: [
         if (cart.restaurant != null)
-          _RestaurantInfoCard(restaurant: cart.restaurant!, isArabic: isArabic),
+          _RestaurantInfoCard(restaurant: cart.restaurant!),
         const SizedBox(height: 16),
+        TextCustom(
+          text: l10n.orderItems,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: ColorsCustom.textPrimary,
+        ),
+        const SizedBox(height: 10),
         ...cart.items.where((item) => !_dismissedItemIds.contains(item.id)).map(
           (item) {
             final isUpdating =
@@ -184,7 +204,6 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _CartItemCard(
                 item: item,
-                isArabic: isArabic,
                 isUpdating: isUpdating,
                 onQuantityChanged: (qty) => _updateQuantity(item.id, qty),
                 onRemove: () => _removeItem(item.id),
@@ -201,7 +220,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
           onApply: () => _applyCoupon(cart.id),
           onRemove: () => _removeCoupon(cart.id),
         ),
-        const SizedBox(height: 100),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -217,7 +236,10 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   }
 
   void _removeItem(int itemId) {
-    setState(() => _dismissedItemIds.add(itemId));
+    setState(() {
+      _dismissedItemIds.add(itemId);
+      _pendingRemovalItemIds.add(itemId);
+    });
     context.read<CartBloc>().add(CartRemoveItemRequested(itemId: itemId));
   }
 
@@ -243,6 +265,7 @@ class _CartDetailScreenState extends State<CartDetailScreen> {
   }
 
   void _navigateToCheckout(BuildContext context, Cart cart) {
+    inAppMessagingService.triggerEvent('checkout_started');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -487,30 +510,50 @@ class _LoadingView extends StatelessWidget {
 
 class _RestaurantInfoCard extends StatelessWidget {
   final CartRestaurant restaurant;
-  final bool isArabic;
 
-  const _RestaurantInfoCard({required this.restaurant, required this.isArabic});
+  const _RestaurantInfoCard({required this.restaurant});
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ColorsCustom.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ColorsCustom.border),
-        boxShadow: ColorsCustom.shadowSm,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           _RestaurantLogo(url: getFullImageUrl(restaurant.logo)),
           const SizedBox(width: 12),
           Expanded(
-            child: TextCustom(
-              text: restaurant.getLocalizedName(isArabic),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: ColorsCustom.textPrimary,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextCustom(
+                  text: restaurant.getLocalizedName(isArabic),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: ColorsCustom.textPrimary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                TextCustom(
+                  text: restaurant.restaurantType.toUpperCase(),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: ColorsCustom.textHint,
+                ),
+              ],
             ),
           ),
         ],
@@ -542,8 +585,8 @@ class _RestaurantLogo extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: url!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => _buildPlaceholder(),
-                errorWidget: (_, __, ___) => _buildPlaceholder(),
+                placeholder: (context, url) => _buildPlaceholder(),
+                errorWidget: (context, url, error) => _buildPlaceholder(),
               ),
             )
           : _buildPlaceholder(),
@@ -559,14 +602,12 @@ class _RestaurantLogo extends StatelessWidget {
 
 class _CartItemCard extends StatelessWidget {
   final CartItem item;
-  final bool isArabic;
   final bool isUpdating;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback onRemove;
 
   const _CartItemCard({
     required this.item,
-    required this.isArabic,
     required this.isUpdating,
     required this.onQuantityChanged,
     required this.onRemove,
@@ -575,6 +616,7 @@ class _CartItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Dismissible(
       key: Key('cart_item_${item.id}'),
@@ -588,9 +630,15 @@ class _CartItemCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: ColorsCustom.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: ColorsCustom.border),
-          boxShadow: ColorsCustom.shadowSm,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -598,7 +646,7 @@ class _CartItemCard extends StatelessWidget {
               children: [
                 _ProductImage(url: getFullImageUrl(item.product.image)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildProductInfo(l10n)),
+                Expanded(child: _buildProductInfo(l10n, isArabic)),
               ],
             ),
             if (isUpdating) _buildLoadingOverlay(),
@@ -624,7 +672,7 @@ class _CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProductInfo(AppLocalizations l10n) {
+  Widget _buildProductInfo(AppLocalizations l10n, bool isArabic) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -645,7 +693,7 @@ class _CartItemCard extends StatelessWidget {
         ],
         if (item.addons.isNotEmpty) ...[
           const SizedBox(height: 6),
-          _buildAddonsList(),
+          _buildAddonsList(isArabic),
         ],
         const SizedBox(height: 10),
         Row(
@@ -669,7 +717,7 @@ class _CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAddonsList() {
+  Widget _buildAddonsList(bool isArabic) {
     return Wrap(
       spacing: 4,
       runSpacing: 4,
@@ -722,21 +770,21 @@ class _ProductImage extends StatelessWidget {
     final hasValidUrl = url != null && url!.isNotEmpty;
 
     return Container(
-      width: 76,
-      height: 76,
+      width: 82,
+      height: 82,
       decoration: BoxDecoration(
         color: ColorsCustom.primarySoft,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ColorsCustom.border),
       ),
       child: hasValidUrl
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(15),
               child: CachedNetworkImage(
                 imageUrl: url!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => _buildPlaceholder(),
-                errorWidget: (_, __, ___) => _buildPlaceholder(),
+                placeholder: (context, url) => _buildPlaceholder(),
+                errorWidget: (context, url, error) => _buildPlaceholder(),
               ),
             )
           : _buildPlaceholder(),
@@ -769,8 +817,8 @@ class _QuantityControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: ColorsCustom.background,
-        borderRadius: BorderRadius.circular(10),
+        color: ColorsCustom.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: ColorsCustom.border),
       ),
       child: Row(
@@ -819,11 +867,11 @@ class _QuantityButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: isDelete ? ColorsCustom.errorBg : ColorsCustom.primarySoft,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(9),
         ),
         child: Icon(
           icon,
@@ -1034,18 +1082,18 @@ class _CheckoutSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: ColorsCustom.surface,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15),
+            color: Colors.black.withAlpha(18),
             blurRadius: 20,
-            offset: const Offset(0, -6),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -1054,22 +1102,37 @@ class _CheckoutSection extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _PriceRow(label: l10n.subtotal, amount: cart.subtotalDouble),
-            const SizedBox(height: 8),
-            _PriceRow(label: l10n.deliveryFee, amount: cart.deliveryFeeDouble),
-            if (cart.discountAmountDouble > 0) ...[
-              const SizedBox(height: 8),
-              _PriceRow(
-                label: l10n.discount,
-                amount: -cart.discountAmountDouble,
-                isDiscount: true,
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: ColorsCustom.surfaceVariant,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: ColorsCustom.border),
               ),
-            ],
+              child: Column(
+                children: [
+                  _PriceRow(label: l10n.subtotal, amount: cart.subtotalDouble),
+                  const SizedBox(height: 8),
+                  _PriceRow(
+                    label: l10n.deliveryFee,
+                    amount: cart.deliveryFeeDouble,
+                  ),
+                  if (cart.discountAmountDouble > 0) ...[
+                    const SizedBox(height: 8),
+                    _PriceRow(
+                      label: l10n.discount,
+                      amount: -cart.discountAmountDouble,
+                      isDiscount: true,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  const Divider(color: ColorsCustom.border, height: 1),
+                  const SizedBox(height: 12),
+                  _TotalRow(total: cart.totalDouble),
+                ],
+              ),
+            ),
             const SizedBox(height: 14),
-            const Divider(color: ColorsCustom.border, height: 1),
-            const SizedBox(height: 14),
-            _TotalRow(total: cart.totalDouble),
-            const SizedBox(height: 18),
             _CheckoutButton(onTap: onCheckout),
           ],
         ),
@@ -1151,31 +1214,42 @@ class _CheckoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          color: ColorsCustom.primary,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.arrow_forward_rounded,
-              color: ColorsCustom.textOnPrimary,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            TextCustom(
-              text: l10n.continueToCheckout,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: ColorsCustom.textOnPrimary,
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: double.infinity,
+          height: 54,
+          decoration: BoxDecoration(
+            color: ColorsCustom.primary,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: ColorsCustom.primary.withAlpha(70),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: ColorsCustom.textOnPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              TextCustom(
+                text: l10n.continueToCheckout,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: ColorsCustom.textOnPrimary,
+              ),
+            ],
+          ),
         ),
       ),
     );

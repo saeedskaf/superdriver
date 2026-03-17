@@ -7,48 +7,69 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 import 'package:superdriver/data/local_secure/secure_storage.dart';
+import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/data/services/notification_service.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 import 'package:superdriver/presentation/screens/main/chat/chat_conversation_screen.dart';
 import 'package:superdriver/presentation/screens/main/chat/chat_screen.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 
-// must be top-level for background FCM
+// ─────────────────────────────────────────────────────────────────────────────
+// Debug logging helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+void _debugLogMessage(String label, RemoteMessage message,
+    {Map<String, String>? extra}) {
+  if (!kDebugMode) return;
+
+  debugPrint('');
+  debugPrint('╔═══════════════════════════════════════════════════════╗');
+  debugPrint('║  $label');
+  debugPrint('╠═══════════════════════════════════════════════════════╣');
+  debugPrint('║ MessageID   : ${message.messageId}');
+  debugPrint('║ SentTime    : ${message.sentTime}');
+  debugPrint('║ From        : ${message.from}');
+  debugPrint('║ Category    : ${message.category}');
+  debugPrint('║ CollapseKey  : ${message.collapseKey}');
+  debugPrint('║ ContentAvail: ${message.contentAvailable}');
+  debugPrint('║ MutableCont : ${message.mutableContent}');
+  debugPrint('║ ThreadID    : ${message.threadId}');
+  debugPrint('╠═══════════ NOTIFICATION FIELD ═══════════════════════╣');
+  debugPrint('║ Title       : ${message.notification?.title}');
+  debugPrint('║ TitleLocKey : ${message.notification?.titleLocKey}');
+  debugPrint('║ TitleLocArgs: ${message.notification?.titleLocArgs}');
+  debugPrint('║ Body        : ${message.notification?.body}');
+  debugPrint('║ BodyLocKey  : ${message.notification?.bodyLocKey}');
+  debugPrint('║ BodyLocArgs : ${message.notification?.bodyLocArgs}');
+  debugPrint('║ Image (and) : ${message.notification?.android?.imageUrl}');
+  debugPrint('║ Image (ios) : ${message.notification?.apple?.imageUrl}');
+  debugPrint('║ Sound       : ${message.notification?.android?.sound}');
+  debugPrint('╠═══════════ DATA FIELD ══════════════════════════════╣');
+  message.data.forEach((k, v) => debugPrint('║ $k : $v'));
+  if (message.data.isEmpty) debugPrint('║ (empty)');
+  if (extra != null) {
+    debugPrint('╠═══════════ APP STATE ═════════════════════════════════╣');
+    extra.forEach((k, v) => debugPrint('║ $k : $v'));
+  }
+  debugPrint('╚═══════════════════════════════════════════════════════╝');
+  debugPrint('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Background handler (must be top-level for FCM)
+// ─────────────────────────────────────────────────────────────────────────────
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (kDebugMode) {
-    debugPrint('');
-    debugPrint('╔═══════════════════════════════════════════════════════╗');
-    debugPrint('║         PUSH NOTIFICATION — BACKGROUND               ║');
-    debugPrint('╠═══════════════════════════════════════════════════════╣');
-    debugPrint('║ MessageID   : ${message.messageId}');
-    debugPrint('║ SentTime    : ${message.sentTime}');
-    debugPrint('║ From        : ${message.from}');
-    debugPrint('║ Category    : ${message.category}');
-    debugPrint('║ CollapseKey  : ${message.collapseKey}');
-    debugPrint('║ ContentAvail: ${message.contentAvailable}');
-    debugPrint('║ MutableCont : ${message.mutableContent}');
-    debugPrint('║ ThreadID    : ${message.threadId}');
-    debugPrint('╠═══════════ NOTIFICATION FIELD ═══════════════════════╣');
-    debugPrint('║ Title       : ${message.notification?.title}');
-    debugPrint('║ TitleLocKey : ${message.notification?.titleLocKey}');
-    debugPrint('║ TitleLocArgs: ${message.notification?.titleLocArgs}');
-    debugPrint('║ Body        : ${message.notification?.body}');
-    debugPrint('║ BodyLocKey  : ${message.notification?.bodyLocKey}');
-    debugPrint('║ BodyLocArgs : ${message.notification?.bodyLocArgs}');
-    debugPrint('║ Image (and) : ${message.notification?.android?.imageUrl}');
-    debugPrint('║ Image (ios) : ${message.notification?.apple?.imageUrl}');
-    debugPrint('║ Sound       : ${message.notification?.android?.sound}');
-    debugPrint('╠═══════════ DATA FIELD ══════════════════════════════╣');
-    message.data.forEach((k, v) {
-      debugPrint('║ $k : $v');
-    });
-    if (message.data.isEmpty) debugPrint('║ (empty)');
-    debugPrint('╚═══════════════════════════════════════════════════════╝');
-    debugPrint('');
-  }
+  _debugLogMessage('PUSH NOTIFICATION — BACKGROUND', message);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────────────────────
 
 class PushNotificationService {
   static final PushNotificationService _instance =
@@ -67,8 +88,11 @@ class PushNotificationService {
   void Function(Map<String, dynamic> data)? onNotificationTap;
 
   bool _initialized = false;
+  final Set<String> _recentForegroundMessageKeys = <String>{};
+  final List<String> _foregroundMessageOrder = <String>[];
 
   static const _channelId = 'superdriver_notifications';
+  static const _maxRecentForegroundKeys = 30;
 
   static const _androidChannel = AndroidNotificationChannel(
     _channelId,
@@ -78,6 +102,20 @@ class PushNotificationService {
     playSound: true,
     enableVibration: true,
   );
+
+  // ───────────────────── Locale ─────────────────────
+
+  String _locale = 'ar';
+
+  void updateLocale(String languageCode) {
+    final changed = _locale != languageCode;
+    _locale = languageCode;
+    if (kDebugMode && changed) {
+      debugPrint('Push: Locale changed to $_locale');
+    }
+  }
+
+  // ───────────────────── Initialization ─────────────────────
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -119,6 +157,8 @@ class PushNotificationService {
       log('PushNotificationService init error: $e\n$st');
     }
   }
+
+  // ───────────────────── Device token ─────────────────────
 
   Future<void> registerDeviceToken() async {
     try {
@@ -180,6 +220,8 @@ class PushNotificationService {
     }
   }
 
+  // ───────────────────── Permission ─────────────────────
+
   Future<void> _requestPermission() async {
     final settings = await _messaging.requestPermission(
       alert: true,
@@ -198,6 +240,8 @@ class PushNotificationService {
       log('WARNING: Notification permission DENIED by user');
     }
   }
+
+  // ───────────────────── Channel & local notifications ─────────────────────
 
   Future<void> _createAndroidChannel() async {
     if (!Platform.isAndroid) return;
@@ -229,53 +273,35 @@ class PushNotificationService {
     );
   }
 
-  void _handleForegroundMessage(RemoteMessage message) {
-    if (kDebugMode) {
-      debugPrint('');
-      debugPrint('╔═══════════════════════════════════════════════════════╗');
-      debugPrint('║         PUSH NOTIFICATION — FOREGROUND                ║');
-      debugPrint('╠═══════════════════════════════════════════════════════╣');
-      debugPrint('║ MessageID   : ${message.messageId}');
-      debugPrint('║ SentTime    : ${message.sentTime}');
-      debugPrint('║ From        : ${message.from}');
-      debugPrint('║ Category    : ${message.category}');
-      debugPrint('║ CollapseKey  : ${message.collapseKey}');
-      debugPrint('║ ContentAvail: ${message.contentAvailable}');
-      debugPrint('║ MutableCont : ${message.mutableContent}');
-      debugPrint('║ ThreadID    : ${message.threadId}');
-      debugPrint('╠═══════════ NOTIFICATION FIELD ═══════════════════════╣');
-      debugPrint('║ Title       : ${message.notification?.title}');
-      debugPrint('║ TitleLocKey : ${message.notification?.titleLocKey}');
-      debugPrint('║ TitleLocArgs: ${message.notification?.titleLocArgs}');
-      debugPrint('║ Body        : ${message.notification?.body}');
-      debugPrint('║ BodyLocKey  : ${message.notification?.bodyLocKey}');
-      debugPrint('║ BodyLocArgs : ${message.notification?.bodyLocArgs}');
-      debugPrint('║ Image (and) : ${message.notification?.android?.imageUrl}');
-      debugPrint('║ Image (ios) : ${message.notification?.apple?.imageUrl}');
-      debugPrint('║ Sound       : ${message.notification?.android?.sound}');
-      debugPrint('╠═══════════ DATA FIELD ══════════════════════════════╣');
-      message.data.forEach((k, v) {
-        debugPrint('║ $k : $v');
-      });
-      if (message.data.isEmpty) debugPrint('║ (empty)');
-      debugPrint('╠═══════════ APP STATE ═════════════════════════════════╣');
-      debugPrint('║ Current locale: $_locale');
-      debugPrint('╚═══════════════════════════════════════════════════════╝');
-      debugPrint('');
+  // ───────────────────── Foreground handling ─────────────────────
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    _debugLogMessage(
+      'PUSH NOTIFICATION — FOREGROUND',
+      message,
+      extra: {'Current locale': _locale},
+    );
+
+    if (_isDuplicateForegroundMessage(message)) return;
+
+    final notificationsEnabled = await _areNotificationsEnabledSafe();
+    if (!notificationsEnabled) {
+      if (kDebugMode) {
+        debugPrint('Push: foreground message skipped (notifications disabled)');
+      }
+      return;
     }
 
-    final notification = message.notification;
-    if (notification != null) {
-      _showLocalNotification(message);
-    }
+    final shown = await _showLocalNotification(message);
 
-    onForegroundMessage?.call();
+    // Only bump unread count if a notification was actually displayed
+    if (shown) {
+      onForegroundMessage?.call();
+    }
   }
 
-  void _showLocalNotification(RemoteMessage message) {
+  Future<bool> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) return;
-
     final data = message.data;
     final isAr = _locale == 'ar';
 
@@ -283,20 +309,48 @@ class PushNotificationService {
     String title;
     String body;
     if (isAr) {
-      title = (data['title'] as String?) ?? notification.title ?? '';
-      body = (data['body'] as String?) ?? notification.body ?? '';
-    } else {
       title =
-          (data['title_en'] as String?) ??
-          (data['title'] as String?) ??
-          notification.title ??
+          _safeString(data['title']) ??
+          _safeString(data['notification_title']) ??
+          notification?.title ??
           '';
       body =
-          (data['body_en'] as String?) ??
-          (data['body'] as String?) ??
-          notification.body ??
+          _safeString(data['body']) ??
+          _safeString(data['message']) ??
+          _safeString(data['notification_body']) ??
+          notification?.body ??
+          '';
+    } else {
+      title =
+          _safeString(data['title_en']) ??
+          _safeString(data['title']) ??
+          _safeString(data['notification_title']) ??
+          notification?.title ??
+          '';
+      body =
+          _safeString(data['body_en']) ??
+          _safeString(data['body']) ??
+          _safeString(data['message']) ??
+          _safeString(data['notification_body']) ??
+          notification?.body ??
           '';
     }
+
+    title = title.trim();
+    body = body.trim();
+    if (title.isEmpty && body.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('Push: foreground message skipped (empty visual payload)');
+      }
+      return false;
+    }
+
+    // Extract image URL from notification or data payload
+    final imageUrl = _safeString(data['image']) ??
+        _safeString(data['image_url']) ??
+        _safeString(data['imageUrl']) ??
+        notification?.android?.imageUrl ??
+        notification?.apple?.imageUrl;
 
     if (kDebugMode) {
       debugPrint('╠═══════════ SHOWING NOTIFICATION ═══════════════════╣');
@@ -305,6 +359,7 @@ class PushNotificationService {
       debugPrint('║ data[title_en]: ${data['title_en']}');
       debugPrint('║ data[body]    : ${data['body']}');
       debugPrint('║ data[body_en] : ${data['body_en']}');
+      debugPrint('║ imageUrl    : $imageUrl');
       debugPrint('║ FINAL Title : $title');
       debugPrint('║ FINAL Body  : $body');
       debugPrint('╚════════════════════════════════════════════════════╝');
@@ -313,6 +368,34 @@ class PushNotificationService {
     final notificationId =
         message.messageId?.hashCode ??
         DateTime.now().millisecondsSinceEpoch % 2147483647;
+
+    // Download image if available
+    Uint8List? imageBytes;
+    String? imagePath;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final response = await http
+            .get(Uri.parse(imageUrl))
+            .timeout(const Duration(seconds: 10));
+        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+          imageBytes = response.bodyBytes;
+
+          // Save to temp file for iOS attachment
+          if (Platform.isIOS) {
+            final tempDir = Directory.systemTemp;
+            final file = File(
+              '${tempDir.path}/notif_${notificationId}_img.jpg',
+            );
+            await file.writeAsBytes(imageBytes);
+            imagePath = file.path;
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Push: Failed to download notification image: $e');
+        }
+      }
+    }
 
     final androidDetails = AndroidNotificationDetails(
       _androidChannel.id,
@@ -323,58 +406,66 @@ class PushNotificationService {
       icon: '@mipmap/ic_launcher',
       playSound: true,
       enableVibration: true,
+      styleInformation: imageBytes != null
+          ? BigPictureStyleInformation(
+              ByteArrayAndroidBitmap(imageBytes),
+              hideExpandedLargeIcon: true,
+            )
+          : null,
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      attachments: imagePath != null
+          ? [DarwinNotificationAttachment(imagePath)]
+          : null,
     );
 
-    _localNotifications.show(
-      notificationId,
-      title,
-      body,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: jsonEncode(data),
-    );
-  }
-
-  String _locale = 'ar';
-
-  void updateLocale(String languageCode) {
-    final changed = _locale != languageCode;
-    _locale = languageCode;
-    if (changed) {
-      debugPrint('Push: Locale changed to $_locale');
+    try {
+      _localNotifications.show(
+        notificationId,
+        title,
+        body,
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
+        payload: jsonEncode(data),
+      );
+      return true;
+    } catch (e) {
+      log('Push: Failed to show local notification: $e');
+      return false;
     }
   }
+
+  // ───────────────────── Notification tap handling ─────────────────────
 
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
       debugPrint('');
       debugPrint('╔═══════════════════════════════════════════════════════╗');
-      debugPrint('║         NOTIFICATION TAPPED — FCM BG/TERMINATED       ║');
+      debugPrint('║  NOTIFICATION TAPPED — FCM BG/TERMINATED              ║');
       debugPrint('╠═══════════════════════════════════════════════════════╣');
       debugPrint('║ MessageID   : ${message.messageId}');
       debugPrint('║ Title       : ${message.notification?.title}');
       debugPrint('║ Body        : ${message.notification?.body}');
       debugPrint('╠═══════════ DATA FIELD ══════════════════════════════╣');
-      message.data.forEach((k, v) {
-        debugPrint('║ $k : $v');
-      });
+      message.data.forEach((k, v) => debugPrint('║ $k : $v'));
       debugPrint('╚═══════════════════════════════════════════════════════╝');
       debugPrint('');
     }
 
-    _navigateFromData(Map<String, dynamic>.from(message.data));
+    inAppMessagingService.triggerEvent('notification_opened');
+    final data = Map<String, dynamic>.from(message.data);
+    onNotificationTap?.call(data);
+    _navigateFromData(data);
   }
 
   void _onLocalNotificationTap(NotificationResponse response) {
     if (kDebugMode) {
       debugPrint('');
       debugPrint('╔═══════════════════════════════════════════════════════╗');
-      debugPrint('║         NOTIFICATION TAPPED — LOCAL FOREGROUND        ║');
+      debugPrint('║  NOTIFICATION TAPPED — LOCAL FOREGROUND               ║');
       debugPrint('╠═══════════════════════════════════════════════════════╣');
       debugPrint('║ Payload     : ${response.payload}');
       debugPrint('║ ActionId    : ${response.actionId}');
@@ -386,7 +477,9 @@ class PushNotificationService {
 
     if (response.payload != null && response.payload!.isNotEmpty) {
       try {
+        inAppMessagingService.triggerEvent('notification_opened');
         final data = Map<String, dynamic>.from(jsonDecode(response.payload!));
+        onNotificationTap?.call(data);
         _navigateFromData(data);
       } catch (e) {
         log('Push: Failed to parse notification payload: $e');
@@ -394,26 +487,54 @@ class PushNotificationService {
     }
   }
 
-  // handles navigation for all notification types
-  void _navigateFromData(Map<String, dynamic> data) {
-    // Django sends reference_type/reference_id, Cloud Function sends type/chatId
-    final notifType =
-        data['type']?.toString() ?? data['reference_type']?.toString();
-    final refId = int.tryParse(data['reference_id']?.toString() ?? '');
-    final chatId = data['chatId']?.toString();
+  // ───────────────────── Navigation ─────────────────────
 
-    debugPrint('Push Navigate: type=$notifType, refId=$refId');
+  void _navigateFromData(Map<String, dynamic> data) {
+    final notifType = _extractNotificationType(data);
+    final refId = _parseIntFromKeys(data, const [
+      'reference_id',
+      'referenceId',
+      'order_id',
+      'orderId',
+      'id',
+    ]);
+    final chatId = _firstNonEmptyString(data, const [
+      'chatId',
+      'chat_id',
+      'conversation_id',
+      'conversationId',
+    ]);
+
+    if (kDebugMode) {
+      debugPrint('Push Navigate: type=$notifType, refId=$refId');
+    }
 
     final navigator = navigatorKey.currentState;
     if (navigator == null) {
-      debugPrint('Push Navigate: navigatorKey.currentState is NULL');
+      if (kDebugMode) {
+        debugPrint(
+          'Push Navigate: navigatorKey.currentState is NULL, retrying...',
+        );
+      }
+      _retryNavigation(data, attempts: 8);
+      return;
+    }
+
+    if (!_isUserAuthenticated()) {
+      if (kDebugMode) {
+        debugPrint('Push Navigate: ignored (user is not authenticated)');
+      }
       return;
     }
 
     switch (notifType) {
       case 'order':
         if (refId != null) {
-          debugPrint('Push Navigate: → OrderDetailsScreen(orderId: $refId)');
+          if (kDebugMode) {
+            debugPrint(
+              'Push Navigate: → OrderDetailsScreen(orderId: $refId)',
+            );
+          }
           navigator.push(
             MaterialPageRoute(
               builder: (_) => BlocProvider(
@@ -426,7 +547,9 @@ class PushNotificationService {
         break;
 
       case 'chat':
-        debugPrint('Push Navigate: → Chat flow');
+        if (kDebugMode) {
+          debugPrint('Push Navigate: → Chat flow');
+        }
         navigator.push(
           MaterialPageRoute(
             builder: (_) => (chatId != null && chatId.isNotEmpty)
@@ -437,15 +560,116 @@ class PushNotificationService {
         break;
 
       default:
-        debugPrint('Push Navigate: Unknown type "$notifType" — no navigation');
+        if (kDebugMode) {
+          debugPrint(
+            'Push Navigate: Unknown type "$notifType" — no navigation',
+          );
+        }
         break;
     }
   }
+
+  // ───────────────────── Payload helpers ─────────────────────
+
+  String? _extractNotificationType(Map<String, dynamic> data) {
+    final rawType = _firstNonEmptyString(data, const [
+      'reference_type',
+      'type',
+      'notification_type',
+      'event_type',
+    ]);
+    if (rawType == null) return null;
+
+    final normalized = rawType.toLowerCase().trim();
+    if (normalized == 'order' || normalized.startsWith('order_')) {
+      return 'order';
+    }
+    if (normalized == 'chat' ||
+        normalized.startsWith('chat_') ||
+        normalized == 'message' ||
+        normalized == 'conversation') {
+      return 'chat';
+    }
+    return normalized;
+  }
+
+  int? _parseIntFromKeys(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) continue;
+      if (value is int) return value;
+      final parsed = int.tryParse(value.toString().trim());
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
+
+  String? _firstNonEmptyString(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = _safeString(data[key]);
+      if (value != null) return value;
+    }
+    return null;
+  }
+
+  void _retryNavigation(Map<String, dynamic> data, {required int attempts}) {
+    if (attempts <= 0) return;
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final navigator = navigatorKey.currentState;
+      if (navigator != null) {
+        _navigateFromData(data);
+        return;
+      }
+      _retryNavigation(data, attempts: attempts - 1);
+    });
+  }
+
+  bool _isUserAuthenticated() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return false;
+    try {
+      return context.read<AuthBloc>().state is AuthAuthenticated;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ───────────────────── Duplicate prevention ─────────────────────
+
+  bool _isDuplicateForegroundMessage(RemoteMessage message) {
+    final messageId = message.messageId;
+    if (messageId == null || messageId.isEmpty) return false;
+
+    if (_recentForegroundMessageKeys.contains(messageId)) {
+      if (kDebugMode) {
+        debugPrint('Push: duplicate foreground message skipped: $messageId');
+      }
+      return true;
+    }
+
+    _recentForegroundMessageKeys.add(messageId);
+    _foregroundMessageOrder.add(messageId);
+    if (_foregroundMessageOrder.length > _maxRecentForegroundKeys) {
+      final removed = _foregroundMessageOrder.removeAt(0);
+      _recentForegroundMessageKeys.remove(removed);
+    }
+    return false;
+  }
+
+  String? _safeString(dynamic value) {
+    if (value == null) return null;
+    final result = value.toString().trim();
+    return result.isEmpty ? null : result;
+  }
+
+  // ───────────────────── Token refresh ─────────────────────
 
   void _onTokenRefresh(String newToken) {
     log('Push: Token refreshed');
     registerDeviceToken();
   }
+
+  // ───────────────────── Enable / disable ─────────────────────
 
   Future<bool> _areNotificationsEnabledSafe() async {
     try {
@@ -484,23 +708,21 @@ class PushNotificationService {
     }
   }
 
+  // ───────────────────── Debug info ─────────────────────
+
   Future<void> _printDebugInfo() async {
+    if (!kDebugMode) return;
+
     try {
       final token = await _messaging.getToken();
       debugPrint('════════════════════════════════════════');
-      if (token != null) {
-        debugPrint('FCM TOKEN: $token');
-      } else {
-        debugPrint('FCM TOKEN: NULL');
-      }
+      debugPrint('FCM TOKEN: ${token ?? 'NULL'}');
 
       if (Platform.isIOS) {
         final apnsToken = await _messaging.getAPNSToken();
-        if (apnsToken == null) {
-          debugPrint('APNs TOKEN: NULL — Push will NOT work on iOS!');
-        } else {
-          debugPrint('APNs TOKEN: Available');
-        }
+        debugPrint(apnsToken == null
+            ? 'APNs TOKEN: NULL — Push will NOT work on iOS!'
+            : 'APNs TOKEN: Available');
       }
       debugPrint('════════════════════════════════════════');
     } catch (e) {

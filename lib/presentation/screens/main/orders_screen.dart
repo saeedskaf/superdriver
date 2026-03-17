@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/domain/models/order_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/main_top_header.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
+import 'package:superdriver/presentation/utils/date_time_formatter.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  State<OrdersScreen> createState() => OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen>
+class OrdersScreenState extends State<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -24,6 +25,11 @@ class _OrdersScreenState extends State<OrdersScreen>
   List<Order> _historyOrders = [];
   bool _isLoading = true;
   String? _errorMessage;
+
+  /// Refreshes current tab — called on same-tab re-select.
+  void scrollToTopAndRefresh() {
+    _refreshCurrentTab();
+  }
 
   @override
   void initState() {
@@ -35,11 +41,7 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
-    if (_tabController.index == 0) {
-      _loadActiveOrders();
-    } else {
-      _loadHistoryOrders();
-    }
+    _loadOrdersByTabIndex(_tabController.index);
   }
 
   void _loadActiveOrders() {
@@ -50,12 +52,16 @@ class _OrdersScreenState extends State<OrdersScreen>
     context.read<OrdersBloc>().add(const OrdersHistoryLoadRequested());
   }
 
-  void _refreshCurrentTab() {
-    if (_tabController.index == 0) {
+  void _loadOrdersByTabIndex(int index) {
+    if (index == 0) {
       _loadActiveOrders();
-    } else {
-      _loadHistoryOrders();
+      return;
     }
+    _loadHistoryOrders();
+  }
+
+  void _refreshCurrentTab() {
+    _loadOrdersByTabIndex(_tabController.index);
   }
 
   @override
@@ -65,11 +71,8 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  void _showSnackBar(
-    BuildContext context,
-    String message, {
-    required bool isError,
-  }) {
+  void _showSnackBar(String message, {required bool isError}) {
+    if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(
@@ -133,7 +136,7 @@ class _OrdersScreenState extends State<OrdersScreen>
               _isLoading = false;
               _errorMessage = state.message;
             });
-            _showSnackBar(context, state.message, isError: true);
+            _showSnackBar(state.message, isError: true);
           } else if (state is OrdersEmpty) {
             setState(() {
               _isLoading = false;
@@ -142,11 +145,11 @@ class _OrdersScreenState extends State<OrdersScreen>
           } else if (state is OrderCancelled) {
             _refreshCurrentTab();
           } else if (state is OrderCancelError) {
-            _showSnackBar(context, state.message, isError: true);
+            _showSnackBar(state.message, isError: true);
           } else if (state is OrderReordered) {
-            _showSnackBar(context, l10n.orderReordered, isError: false);
+            _showSnackBar(l10n.orderReordered, isError: false);
           } else if (state is OrderReorderError) {
-            _showSnackBar(context, state.message, isError: true);
+            _showSnackBar(state.message, isError: true);
           }
         },
         builder: (context, state) {
@@ -163,42 +166,50 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildHeader(AppLocalizations l10n) {
+    return MainTopHeader(
+      title: l10n.myOrders,
+      iconAsset: 'assets/icons/orders_empty_state.png',
+    );
+  }
+
+  Widget _buildTabs(AppLocalizations l10n) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        MediaQuery.of(context).padding.top + 16,
-        24,
-        16,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      height: 52,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: ColorsCustom.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorsCustom.border),
       ),
-      decoration: const BoxDecoration(color: ColorsCustom.surface),
-      child: Row(
-        children: [
-          ClipRRect(
-            child: Image.asset(
-              'assets/icons/orders_empty_state.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: ColorsCustom.primary,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        splashFactory: NoSplash.splashFactory,
+        labelColor: ColorsCustom.textOnPrimary,
+        unselectedLabelColor: ColorsCustom.textSecondary,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        tabs: [
+          Tab(
+            child: _buildTabLabel(
+              label: l10n.active,
+              icon: Icons.pending_actions_rounded,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextCustom(
-                  text: l10n.myOrders,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: ColorsCustom.textPrimary,
-                ),
-                const SizedBox(height: 2),
-                TextCustom(
-                  text: l10n.trackYourOrders,
-                  fontSize: 13,
-                  color: ColorsCustom.textSecondary,
-                ),
-              ],
+          Tab(
+            child: _buildTabLabel(
+              label: l10n.history,
+              icon: Icons.history_rounded,
             ),
           ),
         ],
@@ -206,69 +217,10 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildTabs(AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      decoration: BoxDecoration(
-        color: ColorsCustom.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: ColorsCustom.background,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ColorsCustom.border),
-        ),
-        child: TabBar(
-          controller: _tabController,
-          indicator: BoxDecoration(
-            color: ColorsCustom.surface,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelColor: ColorsCustom.primary,
-          unselectedLabelColor: ColorsCustom.textSecondary,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.pending_actions_rounded, size: 18),
-                  const SizedBox(width: 6),
-                  Text(l10n.active),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.history_rounded, size: 18),
-                  const SizedBox(width: 6),
-                  Text(l10n.history),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildTabLabel({required String label, required IconData icon}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [Icon(icon, size: 18), const SizedBox(width: 6), Text(label)],
     );
   }
 
@@ -425,12 +377,13 @@ class _OrdersScreenState extends State<OrdersScreen>
     List<Order> orders,
     bool isActiveTab,
   ) {
+    final bottomListSpace = MediaQuery.of(context).padding.bottom + 120;
     return RefreshIndicator(
       onRefresh: () async => _refreshCurrentTab(),
       color: ColorsCustom.primary,
       backgroundColor: ColorsCustom.surface,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomListSpace),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           return Padding(
@@ -443,8 +396,13 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   Widget _buildOrderCard(AppLocalizations l10n, Order order, bool isActiveTab) {
-    final statusInfo = _getStatusInfo(order.status, l10n);
-    final Color statusColor = statusInfo['color'];
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final statusInfo = _getStatusInfo(
+      order.status,
+      l10n,
+      isScheduled: order.isScheduled,
+    );
+    final statusColor = statusInfo.color;
 
     return GestureDetector(
       onTap: () => _navigateToOrderDetails(context, order),
@@ -476,7 +434,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                           child: Image.network(
                             order.restaurantLogo!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (context, error, stackTrace) => Icon(
                               Icons.restaurant_rounded,
                               color: statusColor,
                               size: 26,
@@ -511,7 +469,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                       const SizedBox(height: 4),
                       TextCustom(
-                        text: order.restaurantName,
+                        text: order.getLocalizedRestaurantName(isArabic),
                         fontSize: 14,
                         color: ColorsCustom.textSecondary,
                         maxLines: 1,
@@ -533,6 +491,27 @@ class _OrdersScreenState extends State<OrdersScreen>
                           ),
                         ],
                       ),
+                      if (order.isScheduled &&
+                          order.status == 'confirmed' &&
+                          order.scheduledDeliveryTime != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.schedule_rounded,
+                              size: 14,
+                              color: ColorsCustom.info,
+                            ),
+                            const SizedBox(width: 4),
+                            TextCustom(
+                              text:
+                                  '${l10n.scheduledDelivery}: ${DateTimeFormatter.formatTimeAmPm(order.scheduledDeliveryTime!, l10n)}',
+                              fontSize: 12,
+                              color: ColorsCustom.info,
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -582,7 +561,7 @@ class _OrdersScreenState extends State<OrdersScreen>
               ],
             ),
 
-            if (isActiveTab && ['draft', 'placed'].contains(order.status)) ...[
+            if (isActiveTab && order.canBeCancelled) ...[
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -627,8 +606,8 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildStatusBadge(Map<String, dynamic> statusInfo) {
-    final Color color = statusInfo['color'];
+  Widget _buildStatusBadge(_OrderStatusInfo statusInfo) {
+    final color = statusInfo.color;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -644,14 +623,14 @@ class _OrdersScreenState extends State<OrdersScreen>
             width: 12,
             height: 12,
             child: Image.asset(
-              statusInfo['image'],
+              statusInfo.image,
               fit: BoxFit.contain,
               color: color,
             ),
           ),
           const SizedBox(width: 4),
           TextCustom(
-            text: statusInfo['label'],
+            text: statusInfo.label,
             fontSize: 10,
             fontWeight: FontWeight.bold,
             color: color,
@@ -766,68 +745,72 @@ class _OrdersScreenState extends State<OrdersScreen>
     reasonController.dispose();
   }
 
-  Map<String, dynamic> _getStatusInfo(String status, AppLocalizations l10n) {
+  _OrderStatusInfo _getStatusInfo(
+    String status,
+    AppLocalizations l10n, {
+    bool isScheduled = false,
+  }) {
     switch (status) {
       case 'draft':
-        return {
-          'label': l10n.statusDraft,
-          'color': ColorsCustom.textSecondary,
-          'image': 'assets/icons/status_pending.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusDraft,
+          color: ColorsCustom.textSecondary,
+          image: 'assets/icons/status_pending.png',
+        );
       case 'placed':
-        return {
-          'label': l10n.statusPlaced,
-          'color': ColorsCustom.secondaryDark,
-          'image': 'assets/icons/status_confirmed.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusPlaced,
+          color: ColorsCustom.secondaryDark,
+          image: 'assets/icons/status_pending.png',
+        );
+      case 'confirmed':
+        if (!isScheduled) {
+          return _OrderStatusInfo(
+            label: l10n.statusPlaced,
+            color: ColorsCustom.secondaryDark,
+            image: 'assets/icons/status_pending.png',
+          );
+        }
+        return _OrderStatusInfo(
+          label: l10n.statusConfirmed,
+          color: ColorsCustom.info,
+          image: 'assets/icons/status_confirmed_scheduled.png',
+        );
       case 'preparing':
-        return {
-          'label': l10n.statusPreparing,
-          'color': Colors.blue,
-          'image': 'assets/icons/status_preparing.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusPreparing,
+          color: ColorsCustom.info,
+          image: 'assets/icons/status_preparing.png',
+        );
       case 'picked':
-        return {
-          'label': l10n.statusPicked,
-          'color': ColorsCustom.primary,
-          'image': 'assets/icons/status_ready.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusPicked,
+          color: ColorsCustom.primary,
+          image: 'assets/icons/status_ready.png',
+        );
       case 'delivered':
-        return {
-          'label': l10n.statusDelivered,
-          'color': ColorsCustom.success,
-          'image': 'assets/icons/status_delivering.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusDelivered,
+          color: ColorsCustom.success,
+          image: 'assets/icons/status_delivering.png',
+        );
       case 'cancelled':
-        return {
-          'label': l10n.statusCancelled,
-          'color': ColorsCustom.error,
-          'image': 'assets/icons/status_cancelled.png',
-        };
+        return _OrderStatusInfo(
+          label: l10n.statusCancelled,
+          color: ColorsCustom.error,
+          image: 'assets/icons/status_cancelled.png',
+        );
       default:
-        return {
-          'label': status,
-          'color': ColorsCustom.textSecondary,
-          'image': 'assets/icons/status_error.png',
-        };
+        return _OrderStatusInfo(
+          label: status,
+          color: ColorsCustom.textSecondary,
+          image: 'assets/icons/status_error.png',
+        );
     }
   }
 
   String _formatDate(DateTime date, AppLocalizations l10n) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inMinutes < 60) {
-      return l10n.minutesAgo(diff.inMinutes);
-    } else if (diff.inHours < 24) {
-      return l10n.hoursAgo(diff.inHours);
-    } else if (diff.inDays == 1) {
-      return l10n.yesterday;
-    } else if (diff.inDays < 7) {
-      return l10n.daysAgo(diff.inDays);
-    } else {
-      return DateFormat('dd/MM/yyyy').format(date);
-    }
+    return DateTimeFormatter.formatRelative(date, l10n);
   }
 
   String _getShortOrderNumber(String orderNumber) {
@@ -841,4 +824,16 @@ class _OrdersScreenState extends State<OrdersScreen>
   int _parseItemsCount(String itemsCount) {
     return int.tryParse(itemsCount) ?? 0;
   }
+}
+
+class _OrderStatusInfo {
+  final String label;
+  final Color color;
+  final String image;
+
+  const _OrderStatusInfo({
+    required this.label,
+    required this.color,
+    required this.image,
+  });
 }

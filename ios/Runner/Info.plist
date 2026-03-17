@@ -35,8 +35,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -51,6 +49,8 @@
 		<string>remote-notification</string>
 	</array>
 	<key>FirebaseMessagingAutoInitEnabled</key>
+	<true/>
+	<key>FirebaseInAppMessagingAutomaticDataCollectionEnabled</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to send photos in chat.</string>

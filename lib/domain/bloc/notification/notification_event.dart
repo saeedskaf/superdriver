@@ -30,7 +30,16 @@ class NotificationMarkAllAsReadRequested extends NotificationEvent {
   const NotificationMarkAllAsReadRequested();
 }
 
+/// Load the next page of notifications (infinite scroll)
+class NotificationsLoadMoreRequested extends NotificationEvent {
+  const NotificationsLoadMoreRequested();
+}
+
 /// Called when a push notification arrives (foreground) to bump count
 class NotificationReceived extends NotificationEvent {
   const NotificationReceived();
+}
+
+class NotificationResetRequested extends NotificationEvent {
+  const NotificationResetRequested();
 }

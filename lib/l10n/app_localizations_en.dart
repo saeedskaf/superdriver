@@ -365,6 +365,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpResent => 'Verification code resent successfully';
 
   @override
+  String get otpViaWhatsAppNotice => 'OTP will be sent via WhatsApp';
+
+  @override
   String get sendingVerificationCode => 'Sending verification code...';
 
   @override
@@ -398,13 +401,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchPlaceholder => 'Search for restaurants or dishes...';
 
   @override
-  String get searchRestaurantsAndFood => 'Search restaurants and food';
-
-  @override
   String get searchHint => 'Burgers, pizza, shawarma...';
 
   @override
-  String get searchRestaurants => 'Search restaurants...';
+  String get searchRestaurants => 'Search for a restaurant, meal or dish...';
 
   @override
   String get searchResults => 'Search Results';
@@ -1269,6 +1269,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusAccepted => 'Accepted';
 
   @override
+  String get statusConfirmed => 'Confirmed';
+
+  @override
   String get statusPreparing => 'Preparing';
 
   @override
@@ -1285,6 +1288,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusCancelled => 'Cancelled';
+
+  @override
+  String get waitingForScheduledTime => 'Waiting for scheduled time';
 
   @override
   String get orderCreated => 'Order Created';
@@ -1416,6 +1422,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyPolicy => 'Privacy Policy';
 
   @override
+  String get legalLastUpdated => 'Last updated: March 2026';
+
+  @override
+  String get legalTermsIntro =>
+      'By using SuperDriver, you agree to these terms, which help keep the app safe, fair, and reliable for everyone.';
+
+  @override
+  String get legalTermsSectionUseTitle => 'Using the Service';
+
+  @override
+  String get legalTermsSectionUseBody =>
+      'Use the app lawfully and provide accurate account information. You are responsible for activity made through your account.';
+
+  @override
+  String get legalTermsSectionOrdersTitle => 'Orders and Cancellations';
+
+  @override
+  String get legalTermsSectionOrdersBody =>
+      'Order availability, preparation time, and cancellation options depend on the store status and order stage.';
+
+  @override
+  String get legalTermsSectionPaymentsTitle => 'Pricing and Payments';
+
+  @override
+  String get legalTermsSectionPaymentsBody =>
+      'Displayed prices include applicable item costs and may include delivery fees, taxes, or discounts based on active offers.';
+
+  @override
+  String get legalTermsSectionUpdatesTitle => 'Changes to Terms';
+
+  @override
+  String get legalTermsSectionUpdatesBody =>
+      'We may update these terms when needed. Continued use of the app after updates means you accept the revised version.';
+
+  @override
+  String get legalPrivacyIntro =>
+      'Your privacy matters to us. This policy explains what data we collect, why we collect it, and how we protect it.';
+
+  @override
+  String get legalPrivacySectionCollectedTitle => 'Data We Collect';
+
+  @override
+  String get legalPrivacySectionCollectedBody =>
+      'We may collect your account details, phone number, addresses, order history, and technical device information needed for app operation.';
+
+  @override
+  String get legalPrivacySectionUsageTitle => 'How We Use Data';
+
+  @override
+  String get legalPrivacySectionUsageBody =>
+      'Data is used to deliver orders, improve service quality, provide support, send important updates, and secure your account.';
+
+  @override
+  String get legalPrivacySectionSharingTitle => 'When We Share Data';
+
+  @override
+  String get legalPrivacySectionSharingBody =>
+      'We only share necessary data with restaurants, delivery partners, and service providers required to complete your order and run the platform.';
+
+  @override
+  String get legalPrivacySectionSecurityTitle => 'Security and Retention';
+
+  @override
+  String get legalPrivacySectionSecurityBody =>
+      'We apply reasonable technical and organizational measures to protect your data and retain it only as long as needed for service and legal obligations.';
+
+  @override
   String get logoutConfirmation =>
       'Are you sure you want to logout from your account?';
 
@@ -1502,6 +1575,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileTab => 'Profile';
+
+  @override
+  String get orderCenterTab => 'Order';
 
   @override
   String get chat => 'Chat';
@@ -1638,7 +1714,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Need help? Open a ticket for driver or order issues, rating disputes, or emergencies.';
 
   @override
-  String get chatOpenTicket => 'Open ticket';
+  String get chatOpenTicket => 'Open a ticket';
 
   @override
   String get chatCreating => 'Creating...';
@@ -1919,6 +1995,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emailCopied => 'Email copied successfully';
+
+  @override
+  String get orderNumberCopied => 'Order number copied';
 
   @override
   String get whatsapp => 'WhatsApp';

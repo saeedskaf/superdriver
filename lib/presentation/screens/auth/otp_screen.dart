@@ -235,6 +235,14 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        TextCustom(
+          text: l10n.otpViaWhatsAppNotice,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: ColorsCustom.textSecondary,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }

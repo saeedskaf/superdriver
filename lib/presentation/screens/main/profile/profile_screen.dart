@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/presentation/screens/main/profile/help_center_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/bloc/locale/locale_bloc.dart';
 import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
@@ -10,16 +9,13 @@ import 'package:superdriver/data/services/push_notification_service.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/legal_document_sheet.dart';
+import 'package:superdriver/presentation/components/main_top_header.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
 import 'package:superdriver/presentation/screens/main/profile/addresses_screen.dart';
 import 'package:superdriver/presentation/screens/main/profile/change_password_screen.dart';
 import 'package:superdriver/presentation/screens/main/profile/edit_profile_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const _kTermsUrl = 'https://superdriverapp.com/terms';
-const _kPrivacyUrl = 'https://superdriverapp.com/privacy';
 
 // ─── ProfileScreen ────────────────────────────────────────────────────────────
 
@@ -27,10 +23,11 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
+  final _scrollController = ScrollController();
   bool _notificationsEnabled = true;
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -40,6 +37,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadNotificationPref();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Scrolls to top and refreshes profile — called on same-tab re-select.
+  void scrollToTopAndRefresh() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _loadProfile();
   }
 
   // ── Data helpers ───────────────────────────────────────────────────────────
@@ -57,13 +72,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     value
         ? await pushNotificationService.enableNotifications()
         : await pushNotificationService.disableNotifications();
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   // ── Navigation helpers ─────────────────────────────────────────────────────
@@ -192,192 +200,166 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: ColorsCustom.background,
-      appBar: _ProfileHeader(l10n: l10n),
-      body: BlocConsumer<ProfileBloc, ProfileState>(
-        listener: (_, state) {
-          if (state is ProfileError) {
-            _showSnackBar(state.message, isError: true);
-          }
-        },
-        builder: (_, state) {
-          if (state is ProfileLoading) return _LoadingView(l10n: l10n);
-          if (state is ProfileError) {
-            return _ErrorView(
-              l10n: l10n,
-              message: state.message,
-              onRetry: _loadProfile,
-              onLogout: () => _showLogoutDialog(l10n),
-            );
-          }
+      body: Column(
+        children: [
+          MainTopHeader(
+            title: l10n.profile,
+            iconAsset: 'assets/icons/profile_placeholder.png',
+          ),
+          Expanded(
+            child: BlocConsumer<ProfileBloc, ProfileState>(
+              listener: (_, state) {
+                if (state is ProfileError) {
+                  _showSnackBar(state.message, isError: true);
+                }
+              },
+              builder: (_, state) {
+                if (state is ProfileLoading) return _LoadingView(l10n: l10n);
+                if (state is ProfileError) {
+                  return _ErrorView(
+                    l10n: l10n,
+                    message: state.message,
+                    onRetry: _loadProfile,
+                    onLogout: () => _showLogoutDialog(l10n),
+                  );
+                }
 
-          final loaded = state is ProfileLoaded ? state : null;
-          final fullName = loaded?.fullName.isEmpty ?? true
-              ? l10n.defaultUserName
-              : loaded!.fullName;
-          final phone = loaded?.phoneNumber ?? '';
-          final initials = loaded?.initials.isEmpty ?? true
-              ? l10n.defaultUserInitial
-              : loaded!.initials;
+                final loaded = state is ProfileLoaded ? state : null;
+                final fullName = loaded?.fullName.isEmpty ?? true
+                    ? l10n.defaultUserName
+                    : loaded!.fullName;
+                final phone = loaded?.phoneNumber ?? '';
+                final initials = loaded?.initials.isEmpty ?? true
+                    ? l10n.defaultUserInitial
+                    : loaded!.initials;
 
-          return RefreshIndicator(
-            onRefresh: () async => _loadProfile(),
-            color: ColorsCustom.primary,
-            backgroundColor: ColorsCustom.surface,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 125),
-              child: Column(
-                children: [
-                  _UserCard(
-                    fullName: fullName,
-                    phoneNumber: phone,
-                    initials: initials,
-                    notificationsEnabled: _notificationsEnabled,
-                    currentLanguage: l10n.currentLanguage,
-                    notificationsLabel: l10n.notifications,
-                    manageAccountLabel: l10n.manageYourAccount,
-                    onDeleteTap: _showDeleteAccountDialog,
-                  ),
-                  const SizedBox(height: 16),
-                  _MenuSection(
-                    title: l10n.accountSection,
-                    icon: Icons.manage_accounts_rounded,
-                    accentColor: ColorsCustom.primary,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.person_outline_rounded,
-                        title: l10n.personalInfo,
-                        accentColor: ColorsCustom.primary,
-                        onTap: _navigateToEditProfile,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.lock_outline_rounded,
-                        title: l10n.changePassword,
-                        accentColor: ColorsCustom.primary,
-                        onTap: _navigateToChangePassword,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.location_on_outlined,
-                        title: l10n.addresses,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () => _pushScreen(const AddressesScreen()),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _MenuSection(
-                    title: l10n.preferencesSection,
-                    icon: Icons.tune_rounded,
-                    accentColor: ColorsCustom.primary,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.language_rounded,
-                        title: l10n.language,
-                        trailing: l10n.currentLanguage,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () => _showLanguageDialog(l10n),
-                      ),
-                      _MenuItemData(
-                        icon: Icons.notifications_outlined,
-                        title: l10n.pushNotifications,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () =>
-                            _toggleNotifications(!_notificationsEnabled),
-                        customTrailing: Switch.adaptive(
-                          value: _notificationsEnabled,
-                          onChanged: _toggleNotifications,
-                          activeThumbColor: ColorsCustom.primary,
-                          activeTrackColor: ColorsCustom.primary.withAlpha(90),
+                return RefreshIndicator(
+                  onRefresh: () async => _loadProfile(),
+                  color: ColorsCustom.primary,
+                  backgroundColor: ColorsCustom.surface,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(0, 16, 0, 125),
+                    child: Column(
+                      children: [
+                        _UserCard(
+                          fullName: fullName,
+                          phoneNumber: phone,
+                          initials: initials,
+                          notificationsEnabled: _notificationsEnabled,
+                          currentLanguage: l10n.currentLanguage,
+                          notificationsLabel: l10n.notifications,
+                          manageAccountLabel: l10n.manageYourAccount,
+                          onDeleteTap: _showDeleteAccountDialog,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        _MenuSection(
+                          title: l10n.accountSection,
+                          icon: Icons.manage_accounts_rounded,
+                          accentColor: ColorsCustom.primary,
+                          items: [
+                            _MenuItemData(
+                              icon: Icons.person_outline_rounded,
+                              title: l10n.personalInfo,
+                              accentColor: ColorsCustom.primary,
+                              onTap: _navigateToEditProfile,
+                            ),
+                            _MenuItemData(
+                              icon: Icons.lock_outline_rounded,
+                              title: l10n.changePassword,
+                              accentColor: ColorsCustom.primary,
+                              onTap: _navigateToChangePassword,
+                            ),
+                            _MenuItemData(
+                              icon: Icons.location_on_outlined,
+                              title: l10n.addresses,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () => _pushScreen(const AddressesScreen()),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _MenuSection(
+                          title: l10n.preferencesSection,
+                          icon: Icons.tune_rounded,
+                          accentColor: ColorsCustom.primary,
+                          items: [
+                            _MenuItemData(
+                              icon: Icons.language_rounded,
+                              title: l10n.language,
+                              trailing: l10n.currentLanguage,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () => _showLanguageDialog(l10n),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.notifications_outlined,
+                              title: l10n.pushNotifications,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () =>
+                                  _toggleNotifications(!_notificationsEnabled),
+                              customTrailing: Switch.adaptive(
+                                value: _notificationsEnabled,
+                                onChanged: _toggleNotifications,
+                                activeThumbColor: ColorsCustom.primary,
+                                activeTrackColor: ColorsCustom.primary
+                                    .withAlpha(90),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _MenuSection(
+                          title: l10n.supportSection,
+                          icon: Icons.support_agent_rounded,
+                          accentColor: ColorsCustom.primary,
+                          items: [
+                            _MenuItemData(
+                              icon: Icons.help_outline_rounded,
+                              title: l10n.helpCenter,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () =>
+                                  _pushScreen(const HelpCenterScreen()),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.description_outlined,
+                              title: l10n.termsAndConditions,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () => showLegalDocumentSheet(
+                                context,
+                                type: LegalDocumentType.terms,
+                              ),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.privacy_tip_outlined,
+                              title: l10n.privacyPolicy,
+                              accentColor: ColorsCustom.primary,
+                              onTap: () => showLegalDocumentSheet(
+                                context,
+                                type: LegalDocumentType.privacy,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        _LogoutButton(
+                          label: l10n.logout,
+                          onTap: () => _showLogoutDialog(l10n),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _MenuSection(
-                    title: l10n.supportSection,
-                    icon: Icons.support_agent_rounded,
-                    accentColor: ColorsCustom.primary,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.help_outline_rounded,
-                        title: l10n.helpCenter,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () => _pushScreen(const HelpCenterScreen()),
-                      ),
-                      _MenuItemData(
-                        icon: Icons.description_outlined,
-                        title: l10n.termsAndConditions,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () => _launchUrl(_kTermsUrl),
-                      ),
-                      _MenuItemData(
-                        icon: Icons.privacy_tip_outlined,
-                        title: l10n.privacyPolicy,
-                        accentColor: ColorsCustom.primary,
-                        onTap: () => _launchUrl(_kPrivacyUrl),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _LogoutButton(
-                    label: l10n.logout,
-                    onTap: () => _showLogoutDialog(l10n),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-
-class _ProfileHeader extends StatelessWidget implements PreferredSizeWidget {
-  const _ProfileHeader({required this.l10n});
-
-  final AppLocalizations l10n;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: ColorsCustom.surface,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      centerTitle: true,
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: const BoxDecoration(color: ColorsCustom.surface),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            ClipRRect(
-              child: Image.asset(
-                'assets/icons/profile_placeholder.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: 8),
-            TextCustom(
-              text: l10n.profile,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: ColorsCustom.textPrimary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _UserCard extends StatelessWidget {
   const _UserCard({
@@ -1256,7 +1238,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 )
               else ...[
                 ButtonCustom.primary(
-                  text: l10n.deleteAccountConfirm,
+                  text: l10n.deleteAccount,
                   onPressed: _submit,
                 ),
                 const SizedBox(height: 10),

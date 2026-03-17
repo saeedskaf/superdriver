@@ -30,8 +30,8 @@ class HomeHeader extends StatelessWidget {
     final hasLocation =
         selectedLocation != null && selectedLocation!.displayName.isNotEmpty;
 
-    // Image area: status bar + top padding + address row (40) + gap
-    final imageHeight = topPadding + 12 + 40 + 12 + (_searchBarHeight / 2);
+    // Image area: status bar + top padding + address row + gap
+    final imageHeight = topPadding + 12 + 44 + 14 + (_searchBarHeight / 2);
 
     return SizedBox(
       // Total = image area + bottom half of search bar
@@ -45,7 +45,34 @@ class HomeHeader extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset('assets/icons/home_header_bg.png', fit: BoxFit.cover),
+                Image.asset(
+                  'assets/icons/home_header_background.png',
+                  fit: BoxFit.cover,
+                ),
+                PositionedDirectional(
+                  top: -28,
+                  end: -18,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withAlpha(30),
+                    ),
+                  ),
+                ),
+                PositionedDirectional(
+                  top: 44,
+                  start: -32,
+                  child: Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: ColorsCustom.secondary.withAlpha(20),
+                    ),
+                  ),
+                ),
                 // Gradient fade at bottom
                 Positioned(
                   left: 0,
@@ -97,17 +124,17 @@ class HomeHeader extends StatelessWidget {
                             children: [
                               TextCustom(
                                 text: l10n.deliverTo,
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: ColorsCustom.textPrimary,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(height: 1),
+                              const SizedBox(height: 2),
                               TextCustom(
                                 text: hasLocation
                                     ? selectedLocation!.displayName
                                     : l10n.selectDeliveryAddress,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 color: ColorsCustom.textPrimary,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -118,7 +145,7 @@ class HomeHeader extends StatelessWidget {
                         const SizedBox(width: 4),
                         const Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: ColorsCustom.textPrimary,
+                          color: ColorsCustom.primary,
                           size: 18,
                         ),
                       ],
@@ -153,11 +180,11 @@ class HomeHeader extends StatelessWidget {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: ColorsCustom.surface,
-                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white.withAlpha(190),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: ColorsCustom.border,
-                                  width: 0.5,
+                                  color: Colors.white.withAlpha(210),
+                                  width: 0.8,
                                 ),
                               ),
                               child: Center(
@@ -221,38 +248,54 @@ class HomeHeader extends StatelessWidget {
               onTap: onSearchTap,
               child: Container(
                 height: _searchBarHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   color: ColorsCustom.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ColorsCustom.border, width: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: ColorsCustom.border, width: 0.8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(13),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withAlpha(16),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.search_rounded,
-                      size: 22,
-                      color: ColorsCustom.textHint,
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: ColorsCustom.primarySoft,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: ColorsCustom.primary,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextCustom(
                         text: l10n.searchRestaurants,
-                        fontSize: 14,
+                        fontSize: 12,
                         color: ColorsCustom.textHint,
                       ),
                     ),
-                    const Icon(
-                      Icons.tune_rounded,
-                      size: 20,
-                      color: ColorsCustom.primary,
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: ColorsCustom.secondarySoft,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: ColorsCustom.secondaryDark,
+                      ),
                     ),
                   ],
                 ),

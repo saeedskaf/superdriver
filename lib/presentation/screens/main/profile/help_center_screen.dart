@@ -14,7 +14,7 @@ class HelpCenterScreen extends StatefulWidget {
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
   static const _email = 'info@superdriverapp.com';
-  static const _phoneNumber = '+963934082422';
+  static const _phoneNumber = '+963969393503';
 
   int? _expandedCategoryIndex;
   int? _expandedQuestionIndex;

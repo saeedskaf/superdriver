@@ -251,10 +251,10 @@ class ProductDetail extends Equatable {
       discountValue: json['discount_value']?.toString(),
       isDiscountActive: json['is_discount_active'] ?? false,
       discountStart: json['discount_start'] != null
-          ? DateTime.tryParse(json['discount_start'])
+          ? DateTime.tryParse(json['discount_start'])?.toLocal()
           : null,
       discountEnd: json['discount_end'] != null
-          ? DateTime.tryParse(json['discount_end'])
+          ? DateTime.tryParse(json['discount_end'])?.toLocal()
           : null,
       calories: json['calories'],
       preparationTime: json['preparation_time'],
@@ -276,7 +276,7 @@ class ProductDetail extends Equatable {
               ?.map((e) => ProductImage.fromJson(e))
               .toList() ??
           [],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 

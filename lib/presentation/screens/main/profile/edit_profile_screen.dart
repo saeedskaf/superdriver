@@ -80,17 +80,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  String _formatPhoneNumber(String phone) {
-    if (phone.isEmpty) return '';
-    if (phone.startsWith('0')) {
-      final withoutZero = phone.substring(1);
-      if (withoutZero.length >= 9) {
-        return '+963 ${withoutZero.substring(0, 2)} ${withoutZero.substring(2, 5)} ${withoutZero.substring(5)}';
-      }
-    }
-    return phone;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -243,7 +232,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _formatPhoneNumber(_phoneNumber),
+                                  _phoneNumber,
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,

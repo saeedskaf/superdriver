@@ -1,5 +1,25 @@
 import 'package:superdriver/data/env/environment.dart';
 
+String _composeBilingualName(String primary, String? secondary) {
+  final first = primary.trim();
+  final second = (secondary ?? '').trim();
+
+  if (first.isEmpty && second.isEmpty) return '';
+  if (second.isEmpty) return first;
+  if (first.isEmpty) return second;
+  if (first.toLowerCase() == second.toLowerCase()) return first;
+  return '$first - $second';
+}
+
+DateTime? _parseBackendDateTime(dynamic value) {
+  if (value == null) return null;
+  final raw = value.toString().trim();
+  if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+
+  final normalized = raw.replaceFirst(' ', 'T');
+  return DateTime.tryParse(normalized)?.toLocal();
+}
+
 class Order {
   final int id;
   final String orderNumber;
@@ -7,6 +27,7 @@ class Order {
   final String statusDisplay;
   final int restaurantId;
   final String restaurantName;
+  final String? restaurantNameEn;
   final String? restaurantLogo;
   final int? driverId;
   final String? driverName;
@@ -33,6 +54,7 @@ class Order {
   final bool isScheduled;
   final DateTime? scheduledDeliveryTime;
   final DateTime? placedAt;
+  final DateTime? confirmedAt;
   final DateTime? preparingAt;
   final DateTime? pickedAt;
   final DateTime? deliveredAt;
@@ -52,6 +74,7 @@ class Order {
     required this.statusDisplay,
     required this.restaurantId,
     required this.restaurantName,
+    this.restaurantNameEn,
     this.restaurantLogo,
     this.driverId,
     this.driverName,
@@ -78,6 +101,7 @@ class Order {
     required this.isScheduled,
     this.scheduledDeliveryTime,
     this.placedAt,
+    this.confirmedAt,
     this.preparingAt,
     this.pickedAt,
     this.deliveredAt,
@@ -99,6 +123,7 @@ class Order {
       statusDisplay: json['status_display'] ?? '',
       restaurantId: json['restaurant'] ?? 0,
       restaurantName: json['restaurant_name'] ?? '',
+      restaurantNameEn: json['restaurant_name_en']?.toString(),
       restaurantLogo: _fixImageUrl(json['restaurant_logo']),
       driverId: json['driver'],
       driverName: json['driver_name'],
@@ -122,9 +147,12 @@ class Order {
       addressSnapshot: json['address_snapshot'] != null
           ? AddressSnapshot.fromJson(json['address_snapshot'])
           : null,
-      itemsSnapshot: json['items_snapshot'] != null && json['items_snapshot'] is List
+      itemsSnapshot:
+          json['items_snapshot'] != null && json['items_snapshot'] is List
           ? (json['items_snapshot'] as List<dynamic>)
-                .map((item) => ItemSnapshot.fromJson(item as Map<String, dynamic>))
+                .map(
+                  (item) => ItemSnapshot.fromJson(item as Map<String, dynamic>),
+                )
                 .toList()
           : null,
       notes: json['notes'],
@@ -133,6 +161,7 @@ class Order {
       isScheduled: json['is_scheduled'] ?? false,
       scheduledDeliveryTime: _parseDateTime(json['scheduled_delivery_time']),
       placedAt: _parseDateTime(json['placed_at']),
+      confirmedAt: _parseDateTime(json['confirmed_at']),
       preparingAt: _parseDateTime(json['preparing_at']),
       pickedAt: _parseDateTime(json['picked_at']),
       deliveredAt: _parseDateTime(json['delivered_at']),
@@ -152,8 +181,12 @@ class Order {
       trackingInfo: json['tracking_info'] != null
           ? TrackingInfo.fromJson(json['tracking_info'])
           : null,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          _parseBackendDateTime(json['created_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          _parseBackendDateTime(json['updated_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -165,8 +198,7 @@ class Order {
   }
 
   static DateTime? _parseDateTime(dynamic value) {
-    if (value == null) return null;
-    return DateTime.tryParse(value.toString());
+    return _parseBackendDateTime(value);
   }
 
   /// Fix relative URLs by prepending base URL from Environment
@@ -185,13 +217,25 @@ class Order {
   double get subtotalDouble => double.tryParse(subtotal) ?? 0;
   double get deliveryFeeDouble => double.tryParse(deliveryFee) ?? 0;
   double get discountAmountDouble => double.tryParse(discountAmount) ?? 0;
+  String getLocalizedRestaurantName(bool isArabic) {
+    final candidate = (restaurantNameEn ?? restaurantSnapshot?.nameEn ?? '')
+        .trim();
+    if (!isArabic && candidate.isNotEmpty) return candidate;
+    return restaurantName;
+  }
+
+  String get bilingualRestaurantName => _composeBilingualName(
+    restaurantName,
+    restaurantNameEn ?? restaurantSnapshot?.nameEn,
+  );
 
   bool get isActive => !['delivered', 'cancelled'].contains(status);
   bool get isCompleted => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
 
-  /// Check if order can be cancelled (only draft and placed statuses)
-  bool get canBeCancelled => canCancel && ['draft', 'placed'].contains(status);
+  /// Check if order can be cancelled (status-level gate comes from backend canCancel)
+  bool get canBeCancelled =>
+      canCancel && ['draft', 'placed', 'confirmed'].contains(status);
 }
 
 class RestaurantSnapshot {
@@ -350,6 +394,7 @@ class TrackingInfo {
   final String status;
   final String statusDisplay;
   final DateTime? placedAt;
+  final DateTime? confirmedAt;
   final DateTime? preparingAt;
   final DateTime? pickedAt;
   final DateTime? deliveredAt;
@@ -363,6 +408,7 @@ class TrackingInfo {
     required this.status,
     required this.statusDisplay,
     this.placedAt,
+    this.confirmedAt,
     this.preparingAt,
     this.pickedAt,
     this.deliveredAt,
@@ -377,25 +423,18 @@ class TrackingInfo {
       orderNumber: json['order_number'] ?? '',
       status: json['status'] ?? '',
       statusDisplay: json['status_display'] ?? '',
-      placedAt: json['placed_at'] != null
-          ? DateTime.tryParse(json['placed_at'])
-          : null,
-      preparingAt: json['preparing_at'] != null
-          ? DateTime.tryParse(json['preparing_at'])
-          : null,
-      pickedAt: json['picked_at'] != null
-          ? DateTime.tryParse(json['picked_at'])
-          : null,
-      deliveredAt: json['delivered_at'] != null
-          ? DateTime.tryParse(json['delivered_at'])
-          : null,
-      estimatedDeliveryTime: json['estimated_delivery_time'] != null
-          ? DateTime.tryParse(json['estimated_delivery_time'])
-          : null,
+      placedAt: _parseBackendDateTime(json['placed_at']),
+      confirmedAt: _parseBackendDateTime(json['confirmed_at']),
+      preparingAt: _parseBackendDateTime(json['preparing_at']),
+      pickedAt: _parseBackendDateTime(json['picked_at']),
+      deliveredAt: _parseBackendDateTime(json['delivered_at']),
+      estimatedDeliveryTime: _parseBackendDateTime(
+        json['estimated_delivery_time'],
+      ),
       isScheduled: json['is_scheduled'] ?? false,
-      scheduledDeliveryTime: json['scheduled_delivery_time'] != null
-          ? DateTime.tryParse(json['scheduled_delivery_time'])
-          : null,
+      scheduledDeliveryTime: _parseBackendDateTime(
+        json['scheduled_delivery_time'],
+      ),
       driver: json['driver'],
     );
   }
@@ -408,6 +447,7 @@ class OrderItem {
   final String? productImage;
   final int? variationId;
   final String? variationName;
+  final String? variationNameEn;
   final int quantity;
   final String unitPrice;
   final String totalPrice;
@@ -422,6 +462,7 @@ class OrderItem {
     this.productImage,
     this.variationId,
     this.variationName,
+    this.variationNameEn,
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
@@ -438,6 +479,7 @@ class OrderItem {
       productImage: json['product_image'],
       variationId: json['variation'],
       variationName: json['variation_name'],
+      variationNameEn: json['variation_name_en']?.toString(),
       quantity: json['quantity'] ?? 1,
       unitPrice: json['unit_price']?.toString() ?? '0',
       totalPrice: json['total_price']?.toString() ?? '0',
@@ -455,6 +497,25 @@ class OrderItem {
 
   double get unitPriceDouble => double.tryParse(unitPrice) ?? 0;
   double get totalPriceDouble => double.tryParse(totalPrice) ?? 0;
+  String getLocalizedProductName(bool isArabic) {
+    final candidate = (productSnapshot?.nameEn ?? '').trim();
+    if (!isArabic && candidate.isNotEmpty) return candidate;
+    return productName;
+  }
+
+  String? getLocalizedVariationName(bool isArabic) {
+    if (variationName == null || variationName!.trim().isEmpty) return null;
+    final candidate = (variationNameEn ?? '').trim();
+    if (!isArabic && candidate.isNotEmpty) return candidate;
+    return variationName;
+  }
+
+  String get bilingualProductName =>
+      _composeBilingualName(productName, productSnapshot?.nameEn);
+  String? get bilingualVariationName {
+    if (variationName == null || variationName!.trim().isEmpty) return null;
+    return _composeBilingualName(variationName!, variationNameEn);
+  }
 }
 
 class ProductSnapshot {
@@ -481,12 +542,15 @@ class ProductSnapshot {
       basePrice: json['base_price']?.toString() ?? '0',
     );
   }
+
+  String get bilingualName => _composeBilingualName(name, nameEn);
 }
 
 class OrderItemAddon {
   final int id;
   final int addonId;
   final String addonName;
+  final String? addonNameEn;
   final int quantity;
   final String price;
   final String totalPrice;
@@ -495,6 +559,7 @@ class OrderItemAddon {
     required this.id,
     required this.addonId,
     required this.addonName,
+    this.addonNameEn,
     required this.quantity,
     required this.price,
     required this.totalPrice,
@@ -505,11 +570,19 @@ class OrderItemAddon {
       id: json['id'] ?? 0,
       addonId: json['addon'] ?? 0,
       addonName: json['addon_name'] ?? '',
+      addonNameEn: json['addon_name_en']?.toString(),
       quantity: json['quantity'] ?? 1,
       price: json['price']?.toString() ?? '0',
       totalPrice: json['total_price']?.toString() ?? '0',
     );
   }
+  String getLocalizedName(bool isArabic) {
+    final candidate = (addonNameEn ?? '').trim();
+    if (!isArabic && candidate.isNotEmpty) return candidate;
+    return addonName;
+  }
+
+  String get bilingualName => _composeBilingualName(addonName, addonNameEn);
 }
 
 class OrderStatusHistory {
@@ -545,7 +618,9 @@ class OrderStatusHistory {
       changedBy: json['changed_by'],
       changedByName: json['changed_by_name'],
       notes: json['notes'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          _parseBackendDateTime(json['created_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 }
@@ -566,6 +641,7 @@ class OrderListItem {
   final DateTime? scheduledDeliveryTime;
   final DateTime createdAt;
   final DateTime? placedAt;
+  final DateTime? confirmedAt;
   final DateTime? deliveredAt;
 
   OrderListItem({
@@ -584,6 +660,7 @@ class OrderListItem {
     this.scheduledDeliveryTime,
     required this.createdAt,
     this.placedAt,
+    this.confirmedAt,
     this.deliveredAt,
   });
 
@@ -601,16 +678,15 @@ class OrderListItem {
       paymentMethod: json['payment_method'] ?? 'cash',
       paymentMethodDisplay: json['payment_method_display'] ?? '',
       isScheduled: json['is_scheduled'] ?? false,
-      scheduledDeliveryTime: json['scheduled_delivery_time'] != null
-          ? DateTime.tryParse(json['scheduled_delivery_time'])
-          : null,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
-      placedAt: json['placed_at'] != null
-          ? DateTime.tryParse(json['placed_at'])
-          : null,
-      deliveredAt: json['delivered_at'] != null
-          ? DateTime.tryParse(json['delivered_at'])
-          : null,
+      scheduledDeliveryTime: _parseBackendDateTime(
+        json['scheduled_delivery_time'],
+      ),
+      createdAt:
+          _parseBackendDateTime(json['created_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      placedAt: _parseBackendDateTime(json['placed_at']),
+      confirmedAt: _parseBackendDateTime(json['confirmed_at']),
+      deliveredAt: _parseBackendDateTime(json['delivered_at']),
     );
   }
 

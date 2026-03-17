@@ -122,4 +122,12 @@ class Environment {
       '$baseUrl/api/notifications/devices/register/';
   static const String unregisterDeviceEndpoint =
       '$baseUrl/api/notifications/devices/unregister/';
+
+  // Firebase HTTP Functions endpoints
+  static const String functionsBaseUrl = String.fromEnvironment(
+    'FUNCTIONS_BASE_URL',
+    defaultValue: 'https://us-central1-superdriver-narj.cloudfunctions.net',
+  );
+  static const String createChatConversationEndpoint =
+      '$functionsBaseUrl/createChatConversation';
 }

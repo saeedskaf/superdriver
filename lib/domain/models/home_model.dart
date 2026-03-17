@@ -164,7 +164,7 @@ class ReorderItem extends Equatable {
     restaurantName: json['restaurant_name'] ?? '',
     restaurantLogo: json['restaurant_logo'],
     orderDate: json['order_date'] != null
-        ? DateTime.tryParse(json['order_date'])
+        ? DateTime.tryParse(json['order_date'])?.toLocal()
         : null,
     totalAmount: _parseDouble(json['total_amount'] ?? json['total']),
     items:

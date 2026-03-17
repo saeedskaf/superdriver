@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
@@ -74,43 +75,62 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _currentPage = 1;
     _hasMore = true;
 
-    final publicFuture = Future.wait([
+    final publicResults = await Future.wait([
       homeServices.getHomeData(lat: _lat, lng: _lng),
       restaurantServices.getRestaurants(filters: _buildFilters(page: 1)),
     ]);
 
-    final nearbyFuture = (_lat != null && _lng != null)
-        ? homeServices.getNearbyRestaurants(lat: _lat!, lng: _lng!)
-        : Future.value(null);
-
-    final recommendedFuture = _isAuthenticated
-        ? homeServices.getRecommendedRestaurants(lat: _lat, lng: _lng)
-        : Future.value(null);
-
-    final results = await Future.wait([
-      publicFuture,
-      nearbyFuture,
-      recommendedFuture,
-    ]);
-
-    final publicResults = results[0] as List<dynamic>;
     _homeData = publicResults[0] as HomeData;
     _allRestaurants = publicResults[1] as List<RestaurantListItem>;
-    _nearbyRestaurants = results[1] as List<RestaurantListItem>?;
-    _recommendedRestaurants = results[2] as List<RestaurantListItem>?;
-
     _hasMore = _allRestaurants.length >= _pageSize;
+
+    // Optional datasets: failures here should not block home rendering.
+    _nearbyRestaurants = null;
+    _recommendedRestaurants = null;
+
+    Future<List<RestaurantListItem>?> nearbyFuture() async {
+      if (_lat == null || _lng == null) return null;
+      try {
+        return await homeServices.getNearbyRestaurants(lat: _lat!, lng: _lng!);
+      } catch (e) {
+        log('HomeBloc: Error loading nearby (non-blocking): $e');
+        return null;
+      }
+    }
+
+    Future<List<RestaurantListItem>?> recommendedFuture() async {
+      if (!_isAuthenticated) return null;
+      try {
+        return await homeServices.getRecommendedRestaurants(
+          lat: _lat, lng: _lng,
+        );
+      } catch (e) {
+        log('HomeBloc: Error loading recommended (non-blocking): $e');
+        return null;
+      }
+    }
+
+    final results = await Future.wait([nearbyFuture(), recommendedFuture()]);
+    _nearbyRestaurants = results[0];
+    _recommendedRestaurants = results[1];
   }
 
   Future<void> _onLoad(HomeLoadRequested event, Emitter<HomeState> emit) async {
     _updateLocation(event.lat, event.lng);
-    emit(const HomeLoading());
+    final hadData = _homeData != null;
+    if (!hadData) {
+      emit(const HomeLoading());
+    }
     try {
       await _fetchAllData();
       emit(_buildLoadedState());
     } catch (e) {
       log('HomeBloc: Error loading: $e');
-      emit(HomeError(_formatError(e)));
+      if (hadData) {
+        emit(_buildLoadedState());
+      } else {
+        emit(HomeError(_formatError(e)));
+      }
     }
   }
 
@@ -129,6 +149,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       } else {
         emit(HomeError(_formatError(e)));
       }
+    } finally {
+      event.completer?.complete();
     }
   }
 

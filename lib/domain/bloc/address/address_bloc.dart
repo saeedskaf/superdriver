@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:superdriver/domain/models/address_model.dart';
 import 'package:superdriver/domain/models/location_model.dart';
 import 'package:superdriver/data/services/address_service.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 
 part 'address_event.dart';
 part 'address_state.dart';
@@ -91,6 +92,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         isCurrent: event.isCurrent,
       );
 
+      inAppMessagingService.triggerEvent('address_added');
       _refreshAddressCache();
       emit(AddressAddSuccess(address: address));
     } catch (e) {

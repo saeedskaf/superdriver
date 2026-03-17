@@ -60,10 +60,10 @@ class Address extends Equatable {
       isCurrent: json['is_current'] ?? false,
       fullAddress: json['full_address'] ?? '',
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
+          ? DateTime.tryParse(json['created_at'])?.toLocal()
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
+          ? DateTime.tryParse(json['updated_at'])?.toLocal()
           : null,
     );
   }

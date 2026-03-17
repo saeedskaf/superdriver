@@ -7,6 +7,21 @@ import 'package:superdriver/data/local_secure/secure_storage.dart';
 import 'package:superdriver/domain/models/cart_model.dart';
 
 class CartServices {
+  Cart _emptyCart({int id = 0}) {
+    final now = DateTime.now();
+    return Cart(
+      id: id,
+      items: const [],
+      itemsCount: 0,
+      subtotal: '0',
+      deliveryFee: '0',
+      discountAmount: '0',
+      total: '0',
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await secureStorage.getAccessToken();
     final headers = <String, String>{
@@ -47,7 +62,9 @@ class CartServices {
     ).replace(queryParameters: queryParams);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
     late final dynamic responseBody;
     try {
       responseBody = jsonDecode(response.body);
@@ -68,7 +85,9 @@ class CartServices {
     final uri = Uri.parse(Environment.allCartsEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
     late final dynamic responseBody;
     try {
       responseBody = jsonDecode(response.body);
@@ -89,11 +108,9 @@ class CartServices {
     final uri = Uri.parse(Environment.addToCartEndpoint);
     final headers = await _getAuthHeaders();
 
-    final response = await http.post(
-      uri,
-      headers: headers,
-      body: jsonEncode(request.toJson()),
-    ).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers, body: jsonEncode(request.toJson()))
+        .timeout(const Duration(seconds: 30));
 
     late final dynamic responseBody;
     try {
@@ -124,11 +141,9 @@ class CartServices {
       body['special_instructions'] = specialInstructions;
     }
 
-    final response = await http.patch(
-      uri,
-      headers: headers,
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 30));
+    final response = await http
+        .patch(uri, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 30));
 
     late final dynamic responseBody;
     try {
@@ -146,25 +161,57 @@ class CartServices {
   }
 
   /// Delete cart item
-  Future<Cart> deleteCartItem(int itemId) async {
+  Future<Cart> deleteCartItem(
+    int itemId, {
+    int? cartId,
+    int? restaurantId,
+  }) async {
     final uri = Uri.parse(Environment.cartItemEndpoint(itemId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
-    late final dynamic responseBody;
-    try {
-      responseBody = jsonDecode(response.body);
-    } on FormatException {
-      throw Exception('Invalid server response');
+    // Some backends return 204 with no JSON body after successful delete.
+    if (response.statusCode == 204) {
+      try {
+        return await getCart(cartId: cartId, restaurantId: restaurantId);
+      } catch (_) {
+        return _emptyCart(id: cartId ?? 0);
+      }
     }
-    log('Delete Cart Item Response: $responseBody');
 
     if (response.statusCode == 200) {
+      if (response.body.trim().isEmpty) {
+        try {
+          return await getCart(cartId: cartId, restaurantId: restaurantId);
+        } catch (_) {
+          return _emptyCart(id: cartId ?? 0);
+        }
+      }
+
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
+      log('Delete Cart Item Response: $responseBody');
       return Cart.fromJson(responseBody);
-    } else {
+    }
+
+    if (response.body.isNotEmpty) {
+      late final dynamic responseBody;
+      try {
+        responseBody = jsonDecode(response.body);
+      } on FormatException {
+        throw Exception('Invalid server response');
+      }
       throw Exception(_extractErrorMessage(responseBody));
     }
+
+    throw Exception('Failed to delete cart item');
   }
 
   /// Clear entire cart (removes all items but keeps the cart)
@@ -172,7 +219,9 @@ class CartServices {
     final uri = Uri.parse(Environment.clearCartEndpoint(cartId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
     log('Clear Cart Status: ${response.statusCode}');
 
     if (response.statusCode != 204 && response.statusCode != 200) {
@@ -193,7 +242,9 @@ class CartServices {
     ).replace(queryParameters: {'cart_id': cartId.toString()});
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
     log('Delete Cart Status: ${response.statusCode}');
 
     if (response.statusCode != 204 && response.statusCode != 200) {
@@ -215,11 +266,9 @@ class CartServices {
     final uri = Uri.parse(Environment.applyCouponEndpoint(cartId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.post(
-      uri,
-      headers: headers,
-      body: jsonEncode({'code': code}),
-    ).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers, body: jsonEncode({'code': code}))
+        .timeout(const Duration(seconds: 30));
 
     late final dynamic responseBody;
     try {
@@ -241,7 +290,9 @@ class CartServices {
     final uri = Uri.parse(Environment.removeCouponEndpoint(cartId));
     final headers = await _getAuthHeaders();
 
-    final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
     late final dynamic responseBody;
     try {
@@ -265,7 +316,9 @@ class CartServices {
     ).replace(queryParameters: {'cart_id': cartId.toString()});
     final headers = await _getAuthHeaders();
 
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
     log('Validate Cart Status: ${response.statusCode}');
 
     if (response.statusCode == 200) {

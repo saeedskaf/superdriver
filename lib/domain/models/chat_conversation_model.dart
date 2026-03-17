@@ -18,7 +18,7 @@ extension ChatConversationTypeX on ChatConversationType {
       case ChatConversationType.orderRequest:
         return 'ORD-CHAT';
       case ChatConversationType.emergencyTicket:
-        return 'ISS-CHAT';
+        return 'TIC-CHAT';
     }
   }
 

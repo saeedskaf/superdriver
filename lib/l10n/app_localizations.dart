@@ -794,6 +794,12 @@ abstract class AppLocalizations {
   /// **'Verification code resent successfully'**
   String get otpResent;
 
+  /// No description provided for @otpViaWhatsAppNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP will be sent via WhatsApp'**
+  String get otpViaWhatsAppNotice;
+
   /// No description provided for @sendingVerificationCode.
   ///
   /// In en, this message translates to:
@@ -860,12 +866,6 @@ abstract class AppLocalizations {
   /// **'Search for restaurants or dishes...'**
   String get searchPlaceholder;
 
-  /// No description provided for @searchRestaurantsAndFood.
-  ///
-  /// In en, this message translates to:
-  /// **'Search restaurants and food'**
-  String get searchRestaurantsAndFood;
-
   /// No description provided for @searchHint.
   ///
   /// In en, this message translates to:
@@ -875,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchRestaurants.
   ///
   /// In en, this message translates to:
-  /// **'Search restaurants...'**
+  /// **'Search for a restaurant, meal or dish...'**
   String get searchRestaurants;
 
   /// No description provided for @searchResults.
@@ -2576,6 +2576,12 @@ abstract class AppLocalizations {
   /// **'Accepted'**
   String get statusAccepted;
 
+  /// No description provided for @statusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get statusConfirmed;
+
   /// No description provided for @statusPreparing.
   ///
   /// In en, this message translates to:
@@ -2611,6 +2617,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancelled'**
   String get statusCancelled;
+
+  /// No description provided for @waitingForScheduledTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for scheduled time'**
+  String get waitingForScheduledTime;
 
   /// No description provided for @orderCreated.
   ///
@@ -2870,6 +2882,120 @@ abstract class AppLocalizations {
   /// **'Privacy Policy'**
   String get privacyPolicy;
 
+  /// No description provided for @legalLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: March 2026'**
+  String get legalLastUpdated;
+
+  /// No description provided for @legalTermsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'By using SuperDriver, you agree to these terms, which help keep the app safe, fair, and reliable for everyone.'**
+  String get legalTermsIntro;
+
+  /// No description provided for @legalTermsSectionUseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the Service'**
+  String get legalTermsSectionUseTitle;
+
+  /// No description provided for @legalTermsSectionUseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the app lawfully and provide accurate account information. You are responsible for activity made through your account.'**
+  String get legalTermsSectionUseBody;
+
+  /// No description provided for @legalTermsSectionOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders and Cancellations'**
+  String get legalTermsSectionOrdersTitle;
+
+  /// No description provided for @legalTermsSectionOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Order availability, preparation time, and cancellation options depend on the store status and order stage.'**
+  String get legalTermsSectionOrdersBody;
+
+  /// No description provided for @legalTermsSectionPaymentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing and Payments'**
+  String get legalTermsSectionPaymentsTitle;
+
+  /// No description provided for @legalTermsSectionPaymentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Displayed prices include applicable item costs and may include delivery fees, taxes, or discounts based on active offers.'**
+  String get legalTermsSectionPaymentsBody;
+
+  /// No description provided for @legalTermsSectionUpdatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes to Terms'**
+  String get legalTermsSectionUpdatesTitle;
+
+  /// No description provided for @legalTermsSectionUpdatesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We may update these terms when needed. Continued use of the app after updates means you accept the revised version.'**
+  String get legalTermsSectionUpdatesBody;
+
+  /// No description provided for @legalPrivacyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Your privacy matters to us. This policy explains what data we collect, why we collect it, and how we protect it.'**
+  String get legalPrivacyIntro;
+
+  /// No description provided for @legalPrivacySectionCollectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data We Collect'**
+  String get legalPrivacySectionCollectedTitle;
+
+  /// No description provided for @legalPrivacySectionCollectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We may collect your account details, phone number, addresses, order history, and technical device information needed for app operation.'**
+  String get legalPrivacySectionCollectedBody;
+
+  /// No description provided for @legalPrivacySectionUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How We Use Data'**
+  String get legalPrivacySectionUsageTitle;
+
+  /// No description provided for @legalPrivacySectionUsageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Data is used to deliver orders, improve service quality, provide support, send important updates, and secure your account.'**
+  String get legalPrivacySectionUsageBody;
+
+  /// No description provided for @legalPrivacySectionSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When We Share Data'**
+  String get legalPrivacySectionSharingTitle;
+
+  /// No description provided for @legalPrivacySectionSharingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We only share necessary data with restaurants, delivery partners, and service providers required to complete your order and run the platform.'**
+  String get legalPrivacySectionSharingBody;
+
+  /// No description provided for @legalPrivacySectionSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security and Retention'**
+  String get legalPrivacySectionSecurityTitle;
+
+  /// No description provided for @legalPrivacySectionSecurityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We apply reasonable technical and organizational measures to protect your data and retain it only as long as needed for service and legal obligations.'**
+  String get legalPrivacySectionSecurityBody;
+
   /// No description provided for @logoutConfirmation.
   ///
   /// In en, this message translates to:
@@ -3043,6 +3169,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile'**
   String get profileTab;
+
+  /// No description provided for @orderCenterTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get orderCenterTab;
 
   /// No description provided for @chat.
   ///
@@ -3305,7 +3437,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatOpenTicket.
   ///
   /// In en, this message translates to:
-  /// **'Open ticket'**
+  /// **'Open a ticket'**
   String get chatOpenTicket;
 
   /// No description provided for @chatCreating.
@@ -3817,6 +3949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email copied successfully'**
   String get emailCopied;
+
+  /// No description provided for @orderNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number copied'**
+  String get orderNumberCopied;
 
   /// No description provided for @whatsapp.
   ///

@@ -1,7 +1,7 @@
 import 'dart:developer';
 
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/data/services/restaurant_service.dart';
 
@@ -16,6 +16,7 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
 
   RestaurantBloc() : super(const RestaurantInitial()) {
     on<RestaurantsLoadRequested>(_onRestaurantsLoadRequested);
+    on<RestaurantsLoadMoreRequested>(_onRestaurantsLoadMoreRequested);
     on<RestaurantsRefreshRequested>(_onRestaurantsRefreshRequested);
     on<RestaurantDetailsLoadRequested>(_onRestaurantDetailsLoadRequested);
     on<RestaurantCategoriesLoadRequested>(_onCategoriesLoadRequested);
@@ -43,9 +44,11 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
     if (restaurants.isEmpty) {
       final search = filters?.search;
       if (search != null && search.isNotEmpty) {
-        emit(RestaurantsSearchEmpty(query: search));
+        emit(RestaurantsSearchEmpty(query: search, filters: filters));
       } else {
-        emit(RestaurantsEmpty(categoryId: filters?.categoryId));
+        emit(
+          RestaurantsEmpty(categoryId: filters?.categoryId, filters: filters),
+        );
       }
     } else {
       emit(RestaurantsLoaded(restaurants: restaurants, filters: filters));
@@ -68,7 +71,32 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
       _emitForList(emit, restaurants, event.filters);
     } catch (e) {
       log('RestaurantBloc: Error loading restaurants: $e');
-      emit(RestaurantsError(_formatError(e)));
+      emit(RestaurantsError(_formatError(e), filters: event.filters));
+    }
+  }
+
+  Future<void> _onRestaurantsLoadMoreRequested(
+    RestaurantsLoadMoreRequested event,
+    Emitter<RestaurantState> emit,
+  ) async {
+    try {
+      final restaurants = await restaurantServices.getRestaurants(
+        filters: event.filters,
+      );
+      emit(
+        RestaurantsLoadMoreLoaded(
+          restaurants: restaurants,
+          filters: event.filters,
+        ),
+      );
+    } catch (e) {
+      log('RestaurantBloc: Error loading more restaurants: $e');
+      emit(
+        RestaurantsLoadMoreError(
+          message: _formatError(e),
+          filters: event.filters,
+        ),
+      );
     }
   }
 
@@ -87,7 +115,7 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
       if (previousState is RestaurantsLoaded) {
         emit(previousState);
       } else {
-        emit(RestaurantsError(_formatError(e)));
+        emit(RestaurantsError(_formatError(e), filters: _currentFilters));
       }
     }
   }
@@ -152,25 +180,26 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
     RestaurantsFilterChanged event,
     Emitter<RestaurantState> emit,
   ) async {
+    final newFilters = RestaurantFilterParams(
+      categoryId: event.categoryId ?? _currentFilters?.categoryId,
+      search: event.search ?? _currentFilters?.search,
+      hasDiscount: event.hasDiscount ?? _currentFilters?.hasDiscount,
+      isFeatured: event.isFeatured ?? _currentFilters?.isFeatured,
+      isCurrentlyOpen:
+          event.isCurrentlyOpen ?? _currentFilters?.isCurrentlyOpen,
+      ordering: event.ordering ?? _currentFilters?.ordering,
+      restaurantType: event.restaurantType ?? _currentFilters?.restaurantType,
+    );
+
     emit(const RestaurantsLoading());
     try {
-      final newFilters = RestaurantFilterParams(
-        categoryId: event.categoryId ?? _currentFilters?.categoryId,
-        search: event.search ?? _currentFilters?.search,
-        hasDiscount: event.hasDiscount ?? _currentFilters?.hasDiscount,
-        isFeatured: event.isFeatured ?? _currentFilters?.isFeatured,
-        isCurrentlyOpen:
-            event.isCurrentlyOpen ?? _currentFilters?.isCurrentlyOpen,
-        ordering: event.ordering ?? _currentFilters?.ordering,
-        restaurantType: event.restaurantType ?? _currentFilters?.restaurantType,
-      );
       final restaurants = await restaurantServices.getRestaurants(
         filters: newFilters,
       );
       _emitForList(emit, restaurants, newFilters);
     } catch (e) {
       log('RestaurantBloc: Error applying filters: $e');
-      emit(RestaurantsError(_formatError(e)));
+      emit(RestaurantsError(_formatError(e), filters: newFilters));
     }
   }
 
@@ -185,7 +214,7 @@ class RestaurantBloc extends Bloc<RestaurantEvent, RestaurantState> {
       _emitForList(emit, restaurants, null);
     } catch (e) {
       log('RestaurantBloc: Error clearing filters: $e');
-      emit(RestaurantsError(_formatError(e)));
+      emit(RestaurantsError(_formatError(e), filters: null));
     }
   }
 }

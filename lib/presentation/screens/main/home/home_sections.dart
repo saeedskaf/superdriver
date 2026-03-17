@@ -51,8 +51,8 @@ class _BannersSectionState extends State<BannersSection> {
   @override
   Widget build(BuildContext context) {
     final count = widget.banners.length;
-    return SizedBox(
-      height: 160,
+    return AspectRatio(
+      aspectRatio: 16 / 5.5,
       child: Stack(
         children: [
           PageView.builder(
@@ -83,8 +83,9 @@ class _BannersSectionState extends State<BannersSection> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
-                placeholder: (_, __) => Container(color: ColorsCustom.primary),
-                errorWidget: (_, __, ___) =>
+                placeholder: (context, imageUrl) =>
+                    Container(color: ColorsCustom.primary),
+                errorWidget: (context, imageUrl, error) =>
                     Container(color: ColorsCustom.primary),
               )
             : Container(color: ColorsCustom.primary),
@@ -96,36 +97,24 @@ class _BannersSectionState extends State<BannersSection> {
     return Positioned(
       left: 0,
       right: 0,
-      bottom: 0,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: const BoxDecoration(
-            color: ColorsCustom.surfaceVariant,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(25),
-              topRight: Radius.circular(25),
+      bottom: 8,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(count, (i) {
+          final active = _current == i;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: active ? 16 : 6,
+            height: 6,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            decoration: BoxDecoration(
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(3),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(count, (i) {
-              final active = _current == i;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: active ? 20 : 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: active
-                      ? ColorsCustom.secondaryDark
-                      : ColorsCustom.border,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
@@ -152,18 +141,18 @@ class CategoriesSection extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 3,
-                height: 22,
+                width: 4,
+                height: 24,
                 decoration: BoxDecoration(
                   color: ColorsCustom.primary,
-                  borderRadius: BorderRadius.circular(1.5),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 9),
               TextCustom(
                 text: l10n.categories,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
                 color: ColorsCustom.textPrimary,
               ),
             ],
@@ -224,7 +213,7 @@ class RestaurantsHorizontalSection extends StatelessWidget {
           showSeeAll: onSeeAllTap != null,
         ),
         SizedBox(
-          height: kRestaurantCardH + 10, // card + shadow room
+          height: kRestaurantCardH,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsetsDirectional.only(start: 16, end: 16),

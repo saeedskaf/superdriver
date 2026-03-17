@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:superdriver/data/env/environment.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
@@ -26,28 +27,60 @@ class NotificationService {
     return 'Unexpected error';
   }
 
-  /// GET /api/notifications/ — List all notifications
-  Future<List<NotificationItem>> fetchNotifications() async {
-    final uri = Uri.parse(Environment.notificationsEndpoint);
-    final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+  String _extractErrorMessageFromBody(String responseBody) {
+    try {
+      return _extractErrorMessage(jsonDecode(responseBody));
+    } catch (_) {
+      final text = responseBody.trim();
+      return text.isEmpty ? 'Unexpected error' : text;
+    }
+  }
 
-    log('Notifications list status: ${response.statusCode}');
-    log('Notifications list response: ${response.body}');
+  /// Default page size for paginated requests
+  static const int _pageSize = 20;
+
+  /// GET /api/notifications/ — List notifications (paginated)
+  ///
+  /// [page] starts from 1. Returns a [NotificationPage] with the items
+  /// and whether more pages exist.
+  Future<NotificationPage> fetchNotifications({int page = 1}) async {
+    final uri = Uri.parse(Environment.notificationsEndpoint).replace(
+      queryParameters: {
+        'page': '$page',
+        'page_size': '$_pageSize',
+      },
+    );
+    final headers = await _getAuthHeaders();
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
+
+    if (kDebugMode) {
+      log('Notifications list status: ${response.statusCode}');
+    }
 
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
-      if (body is List) {
-        return body.map((e) => NotificationItem.fromJson(e)).toList();
-      }
+
+      // Paginated response: { results: [...], next: "url"|null, ... }
       if (body is Map<String, dynamic> && body['results'] is List) {
-        return (body['results'] as List)
+        final items = (body['results'] as List)
             .map((e) => NotificationItem.fromJson(e))
             .toList();
+        final hasMore = body['next'] != null;
+        return NotificationPage(items: items, hasMore: hasMore);
       }
-      return [];
+
+      // Non-paginated response: plain list (no more pages)
+      if (body is List) {
+        final items =
+            body.map((e) => NotificationItem.fromJson(e)).toList();
+        return NotificationPage(items: items, hasMore: false);
+      }
+
+      return const NotificationPage(items: [], hasMore: false);
     } else {
-      throw Exception(_extractErrorMessage(jsonDecode(response.body)));
+      throw Exception(_extractErrorMessageFromBody(response.body));
     }
   }
 
@@ -55,14 +88,16 @@ class NotificationService {
   Future<NotificationDetail> fetchNotificationDetail(int id) async {
     final uri = Uri.parse(Environment.notificationDetailEndpoint(id));
     final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
-    log('Notification detail: ${response.statusCode}');
+    if (kDebugMode) log('Notification detail: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       return NotificationDetail.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception(_extractErrorMessage(jsonDecode(response.body)));
+      throw Exception(_extractErrorMessageFromBody(response.body));
     }
   }
 
@@ -70,12 +105,14 @@ class NotificationService {
   Future<void> markAsRead(int id) async {
     final uri = Uri.parse(Environment.notificationReadEndpoint(id));
     final headers = await _getAuthHeaders();
-    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
-    log('Mark notification read: ${response.statusCode}');
+    if (kDebugMode) log('Mark notification read: ${response.statusCode}');
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark notification as read');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(_extractErrorMessageFromBody(response.body));
     }
   }
 
@@ -83,12 +120,14 @@ class NotificationService {
   Future<void> markAllAsRead() async {
     final uri = Uri.parse(Environment.notificationsReadAllEndpoint);
     final headers = await _getAuthHeaders();
-    final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
-    log('Mark all read: ${response.statusCode}');
+    if (kDebugMode) log('Mark all read: ${response.statusCode}');
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to mark all as read');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(_extractErrorMessageFromBody(response.body));
     }
   }
 
@@ -96,15 +135,19 @@ class NotificationService {
   Future<int> fetchUnreadCount() async {
     final uri = Uri.parse(Environment.notificationsUnreadCountEndpoint);
     final headers = await _getAuthHeaders();
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 30));
 
-    log('Unread count: ${response.statusCode}');
+    if (kDebugMode) log('Unread count: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
-      return body['count'] ?? 0;
+      final count = body['count'];
+      if (count is int) return count;
+      return int.tryParse(count?.toString() ?? '') ?? 0;
     } else {
-      throw Exception('Failed to get unread count');
+      throw Exception(_extractErrorMessageFromBody(response.body));
     }
   }
 
@@ -124,12 +167,16 @@ class NotificationService {
       'language': language ?? 'ar',
     });
 
-    final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 30));
 
-    log('Register device: ${response.statusCode}');
+    if (kDebugMode) log('Register device: ${response.statusCode}');
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      log('Register device failed: ${response.body}');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = _extractErrorMessageFromBody(response.body);
+      if (kDebugMode) log('Register device failed: $message');
+      throw Exception(message);
     }
   }
 
@@ -139,12 +186,16 @@ class NotificationService {
     final headers = await _getAuthHeaders();
     final body = jsonEncode({'token': token});
 
-    final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 30));
+    final response = await http
+        .post(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 30));
 
-    log('Unregister device: ${response.statusCode}');
+    if (kDebugMode) log('Unregister device: ${response.statusCode}');
 
-    if (response.statusCode != 200) {
-      log('Unregister device failed: ${response.body}');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = _extractErrorMessageFromBody(response.body);
+      if (kDebugMode) log('Unregister device failed: $message');
+      throw Exception(message);
     }
   }
 }

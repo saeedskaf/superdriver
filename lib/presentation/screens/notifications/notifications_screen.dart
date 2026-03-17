@@ -9,6 +9,7 @@ import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/order_details_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
+import 'package:superdriver/presentation/utils/date_time_formatter.dart';
 import 'package:superdriver/data/services/notification_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -19,12 +20,37 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     final isAuth = context.read<AuthBloc>().state is AuthAuthenticated;
     if (isAuth) {
       context.read<NotificationBloc>().add(const NotificationsLoadRequested());
+    }
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+
+    // Load more when 200px from the bottom
+    if (currentScroll >= maxScroll - 200) {
+      final state = context.read<NotificationBloc>().state;
+      if (state is NotificationsLoaded && state.hasMore && !state.isLoadingMore) {
+        context.read<NotificationBloc>().add(
+          const NotificationsLoadMoreRequested(),
+        );
+      }
     }
   }
 
@@ -116,19 +142,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (state.notifications.isEmpty) {
             return _buildEmptyState(l10n);
           }
+          final itemCount = state.notifications.length +
+              (state.isLoadingMore ? 1 : 0);
+
           return RefreshIndicator(
             onRefresh: _onRefresh,
             color: ColorsCustom.primary,
             child: ListView.separated(
+              controller: _scrollController,
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: state.notifications.length,
-              separatorBuilder: (_, __) => const Divider(
+              itemCount: itemCount,
+              separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 indent: 72,
                 endIndent: 16,
                 color: ColorsCustom.border,
               ),
               itemBuilder: (context, index) {
+                // Loading indicator at the bottom
+                if (index >= state.notifications.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: ColorsCustom.primary,
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 return _NotificationTile(
                   notification: state.notifications[index],
                   onTap: () => _onNotificationTap(state.notifications[index]),
@@ -157,24 +203,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _navigateByType(NotificationItem notification) {
     final type = notification.notificationType;
 
-    debugPrint('═══════════ NOTIFICATION LIST TAP ═══════════');
-    debugPrint('Type : $type');
-    debugPrint('ID   : ${notification.id}');
-    debugPrint('Title: ${notification.title}');
-    debugPrint('═════════════════════════════════════════════');
-
-    switch (type) {
-      case 'order_placed':
-      case 'order_accepted':
-      case 'order_preparing':
-      case 'order_picked':
-      case 'order_delivered':
-      case 'order_cancelled':
-        _navigateToOrderFromNotification(notification);
-        break;
-      default:
-        break;
+    if (_isOrderNotificationType(type)) {
+      _navigateToOrderFromNotification(notification);
     }
+  }
+
+  bool _isOrderNotificationType(String rawType) {
+    final normalized = rawType.trim().toLowerCase();
+    return normalized == 'order' || normalized.startsWith('order_');
   }
 
   void _navigateToOrderFromNotification(NotificationItem notification) {
@@ -185,15 +221,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (_) => const Center(
           child: CircularProgressIndicator(color: ColorsCustom.primary),
         ),
       );
 
-      final detail = await notificationService.fetchNotificationDetail(
-        notificationId,
-      );
+      final detail = await notificationService
+          .fetchNotificationDetail(notificationId)
+          .timeout(const Duration(seconds: 15));
 
       if (mounted) Navigator.pop(context);
 
@@ -445,7 +481,9 @@ class _NotificationTile extends StatelessWidget {
   String _getImageForType(String type) {
     switch (type) {
       case 'order_placed':
-        return 'assets/icons/status_confirmed.png';
+        return 'assets/icons/status_pending.png';
+      case 'order_confirmed':
+        return 'assets/icons/status_confirmed_scheduled.png';
       case 'order_accepted':
         return 'assets/icons/status_delivered.png';
       case 'order_preparing':
@@ -466,11 +504,13 @@ class _NotificationTile extends StatelessWidget {
   Color _getColorForType(String type) {
     switch (type) {
       case 'order_placed':
-        return ColorsCustom.primary;
+        return ColorsCustom.secondaryDark;
+      case 'order_confirmed':
+        return ColorsCustom.secondaryDark;
       case 'order_accepted':
         return ColorsCustom.success;
       case 'order_preparing':
-        return ColorsCustom.warning;
+        return ColorsCustom.info;
       case 'order_picked':
         return ColorsCustom.primary;
       case 'order_delivered':
@@ -486,15 +526,6 @@ class _NotificationTile extends StatelessWidget {
 
   String _formatTimeAgo(DateTime dateTime, BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) return l10n.today;
-    if (diff.inMinutes < 60) return l10n.minutesAgo(diff.inMinutes);
-    if (diff.inHours < 24) return l10n.hoursAgo(diff.inHours);
-    if (diff.inDays == 1) return l10n.yesterday;
-    if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
-
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    return DateTimeFormatter.formatRelative(dateTime, l10n);
   }
 }

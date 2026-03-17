@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:superdriver/data/services/chat_service.dart';
 import 'package:superdriver/domain/models/chat_conversation_model.dart';
@@ -54,7 +56,7 @@ class _ChatConversationSectionState extends State<ChatConversationSection> {
   }
 }
 
-class ChatConversationList extends StatelessWidget {
+class ChatConversationList extends StatefulWidget {
   final bool isSessionLoading;
   final String? userId;
   final EdgeInsetsGeometry padding;
@@ -69,16 +71,222 @@ class ChatConversationList extends StatelessWidget {
   });
 
   @override
+  State<ChatConversationList> createState() => _ChatConversationListState();
+}
+
+class _ChatConversationListState extends State<ChatConversationList> {
+  static const int _pageSize = 20;
+
+  final ScrollController _scrollController = ScrollController();
+  StreamSubscription<List<ChatConversation>>? _latestConversationsSub;
+  int _activeSessionRequestId = 0;
+
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  String? _error;
+  List<ChatConversation> _conversations = const [];
+  DocumentSnapshot? _lastConversationDoc;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    _initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatConversationList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.isSessionLoading != widget.isSessionLoading) {
+      _resetState();
+      _initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _latestConversationsSub?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _resetState() {
+    _latestConversationsSub?.cancel();
+    _latestConversationsSub = null;
+    _isLoading = true;
+    _isLoadingMore = false;
+    _hasMore = true;
+    _error = null;
+    _conversations = const [];
+    _lastConversationDoc = null;
+  }
+
+  Future<void> _initialize() async {
+    final userId = widget.userId;
+    if (widget.isSessionLoading || userId == null) return;
+    final requestId = ++_activeSessionRequestId;
+    await _loadInitial(userId: userId, requestId: requestId);
+    if (!mounted ||
+        requestId != _activeSessionRequestId ||
+        widget.userId != userId) {
+      return;
+    }
+    _listenForLatestUpdates(userId: userId, requestId: requestId);
+  }
+
+  Future<void> _loadInitial({
+    required String userId,
+    required int requestId,
+  }) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final page = await chatService.fetchUserConversationsPage(
+        userId,
+        limit: _pageSize,
+      );
+      if (!mounted ||
+          requestId != _activeSessionRequestId ||
+          userId != widget.userId) {
+        return;
+      }
+      setState(() {
+        _conversations = page.conversations;
+        _lastConversationDoc = page.lastDocument;
+        _hasMore = page.hasMore;
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      log(
+        'ChatConversationList: initial load failed: $e',
+        stackTrace: stackTrace,
+      );
+      if (!mounted ||
+          requestId != _activeSessionRequestId ||
+          userId != widget.userId) {
+        return;
+      }
+      setState(() {
+        _error = AppLocalizations.of(context)?.chatConversationsLoadError;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _listenForLatestUpdates({
+    required String userId,
+    required int requestId,
+  }) {
+    _latestConversationsSub?.cancel();
+    _latestConversationsSub = chatService
+        .latestUserConversationsStream(userId, limit: _pageSize)
+        .listen(
+          (latestConversations) {
+            if (!mounted ||
+                requestId != _activeSessionRequestId ||
+                userId != widget.userId) {
+              return;
+            }
+            setState(() {
+              _conversations = _mergeConversations(
+                current: _conversations,
+                incoming: latestConversations,
+              );
+              _error = null;
+            });
+          },
+          onError: (error, stackTrace) {
+            log(
+              'ChatConversationList: stream failed: $error',
+              stackTrace: stackTrace,
+            );
+          },
+        );
+  }
+
+  Future<void> _loadMore() async {
+    final userId = widget.userId;
+    if (userId == null || _isLoadingMore || !_hasMore) return;
+    final cursor = _lastConversationDoc;
+    if (cursor == null) return;
+
+    setState(() => _isLoadingMore = true);
+    try {
+      final page = await chatService.fetchUserConversationsPage(
+        userId,
+        startAfter: cursor,
+        limit: _pageSize,
+      );
+      if (!mounted || userId != widget.userId) return;
+
+      final existingIds = _conversations.map((c) => c.id).toSet();
+      final olderItems = page.conversations
+          .where((conversation) => !existingIds.contains(conversation.id))
+          .toList();
+
+      setState(() {
+        _conversations = [..._conversations, ...olderItems];
+        _lastConversationDoc = page.lastDocument ?? _lastConversationDoc;
+        _hasMore = page.hasMore;
+        _isLoadingMore = false;
+      });
+    } catch (e, stackTrace) {
+      log('ChatConversationList: load more failed: $e', stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent < 120) return;
+    final threshold = position.maxScrollExtent - 140;
+    if (position.pixels >= threshold) {
+      _loadMore();
+    }
+  }
+
+  List<ChatConversation> _mergeConversations({
+    required List<ChatConversation> current,
+    required List<ChatConversation> incoming,
+  }) {
+    final mergedById = {
+      for (final conversation in current) conversation.id: conversation,
+    };
+    for (final conversation in incoming) {
+      mergedById[conversation.id] = conversation;
+    }
+
+    final merged = mergedById.values.toList();
+    merged.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return merged;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
+    final listPadding = EdgeInsets.fromLTRB(
+      resolvedPadding.left,
+      resolvedPadding.top,
+      resolvedPadding.right,
+      resolvedPadding.bottom + MediaQuery.of(context).padding.bottom + 96,
+    );
 
-    if (isSessionLoading) {
+    if (widget.isSessionLoading) {
       return const Center(
         child: CircularProgressIndicator(color: ColorsCustom.primary),
       );
     }
 
-    if (userId == null) {
+    if (widget.userId == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -103,98 +311,115 @@ class ChatConversationList extends StatelessWidget {
       );
     }
 
-    return StreamBuilder<List<ChatConversation>>(
-      stream: chatService.userConversationsStream(userId!),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: ColorsCustom.primary),
-          );
-        }
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: ColorsCustom.primary),
+      );
+    }
 
-        if (snapshot.hasError) {
-          log(
-            'ChatConversationList: failed to load conversations: ${snapshot.error}',
-          );
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.error_outline_rounded,
-                    color: ColorsCustom.error,
-                    size: 46,
-                  ),
-                  const SizedBox(height: 12),
-                  TextCustom(
-                    text: l10n.chatConversationsLoadError,
-                    fontSize: 13,
-                    color: ColorsCustom.textPrimary,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+    if (_error != null && _conversations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: ColorsCustom.error,
+                size: 46,
               ),
-            ),
-          );
-        }
-
-        final conversations = snapshot.data ?? const [];
-
-        if (conversations.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: ColorsCustom.primarySoft,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: ColorsCustom.primary.withAlpha(25),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.forum_outlined,
-                      color: ColorsCustom.primary,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextCustom(
-                    text: l10n.chatNoConversations,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: ColorsCustom.textPrimary,
-                  ),
-                  const SizedBox(height: 8),
-                  TextCustom(
-                    text: l10n.chatNoConversationsBody,
-                    fontSize: 12,
-                    color: ColorsCustom.textSecondary,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              const SizedBox(height: 12),
+              TextCustom(
+                text: _error!,
+                fontSize: 13,
+                color: ColorsCustom.textPrimary,
+                textAlign: TextAlign.center,
               ),
-            ),
-          );
-        }
-
-        return ListView.separated(
-          padding: padding,
-          itemBuilder: (context, index) => _ConversationTile(
-            conversation: conversations[index],
-            showOrderAddress: showOrderAddress,
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  final userId = widget.userId;
+                  if (userId == null) return;
+                  final requestId = ++_activeSessionRequestId;
+                  _loadInitial(userId: userId, requestId: requestId);
+                },
+                child: Text(l10n.retry),
+              ),
+            ],
           ),
-          separatorBuilder: (context, index) => const SizedBox(height: 10),
-          itemCount: conversations.length,
+        ),
+      );
+    }
+
+    if (_conversations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: ColorsCustom.primarySoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: ColorsCustom.primary.withAlpha(25)),
+                ),
+                child: const Icon(
+                  Icons.forum_outlined,
+                  color: ColorsCustom.primary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextCustom(
+                text: l10n.chatNoConversations,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: ColorsCustom.textPrimary,
+              ),
+              const SizedBox(height: 8),
+              TextCustom(
+                text: l10n.chatNoConversationsBody,
+                fontSize: 12,
+                color: ColorsCustom.textSecondary,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      controller: _scrollController,
+      padding: listPadding,
+      itemBuilder: (context, index) {
+        if (index == _conversations.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: ColorsCustom.primary,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return _ConversationTile(
+          conversation: _conversations[index],
+          showOrderAddress: widget.showOrderAddress,
         );
       },
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemCount: _conversations.length + (_isLoadingMore ? 1 : 0),
     );
   }
 }
@@ -248,7 +473,7 @@ class _ConversationTile extends StatelessWidget {
           border: Border.all(
             color: hasUnread
                 ? ColorsCustom.primary.withAlpha(40)
-                : const Color(0xFFE7EBF3),
+                : ColorsCustom.chatDivider,
           ),
           boxShadow: [
             BoxShadow(
@@ -266,7 +491,7 @@ class _ConversationTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isOrder
                     ? ColorsCustom.secondarySoft
-                    : ColorsCustom.error.withAlpha(28),
+                    : ColorsCustom.primarySoft,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -303,7 +528,7 @@ class _ConversationTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isOpen
                               ? ColorsCustom.success.withAlpha(18)
-                              : const Color(0xFFF1F4F8),
+                              : ColorsCustom.chatChip,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
@@ -344,13 +569,17 @@ class _ConversationTile extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: ColorsCustom.secondarySoft,
+                          color: isOrder
+                              ? ColorsCustom.secondarySoft
+                              : ColorsCustom.primarySoft,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: TextCustom(
                           text: conversation.referenceId,
                           fontSize: 10,
-                          color: ColorsCustom.secondaryDark,
+                          color: isOrder
+                              ? ColorsCustom.secondaryDark
+                              : ColorsCustom.error,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/data/local_secure/secure_storage.dart';
 import 'package:superdriver/domain/bloc/profile/profile_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
+import 'package:superdriver/presentation/utils/date_time_formatter.dart';
 
 class ChatSession {
   final String userId;
@@ -52,14 +53,13 @@ String formatConversationTime(DateTime? dateTime) {
   if (now.year == dateTime.year &&
       now.month == dateTime.month &&
       now.day == dateTime.day) {
-    final hours = dateTime.hour.toString().padLeft(2, '0');
+    final hour12 = dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12;
     final minutes = dateTime.minute.toString().padLeft(2, '0');
-    return '$hours:$minutes';
+    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minutes $period';
   }
 
-  final month = dateTime.month.toString().padLeft(2, '0');
-  final day = dateTime.day.toString().padLeft(2, '0');
-  return '$day/$month';
+  return DateTimeFormatter.formatDayMonth(dateTime);
 }
 
 String formatDateSeparator(DateTime date, AppLocalizations l10n) {
@@ -71,8 +71,5 @@ String formatDateSeparator(DateTime date, AppLocalizations l10n) {
   if (diff == 0) return l10n.chatToday;
   if (diff == 1) return l10n.chatYesterday;
 
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final year = date.year.toString();
-  return '$day/$month/$year';
+  return DateTimeFormatter.formatDate(date);
 }

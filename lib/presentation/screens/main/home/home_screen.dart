@@ -1,7 +1,7 @@
 import 'dart:developer';
+import 'dart:async';
 
 import 'package:flutter/material.dart' hide Banner;
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/domain/bloc/home/home_bloc.dart';
@@ -11,6 +11,7 @@ import 'package:superdriver/domain/bloc/cart/cart_bloc.dart';
 import 'package:superdriver/domain/models/home_model.dart';
 import 'package:superdriver/domain/models/restaurant_model.dart';
 import 'package:superdriver/data/services/address_service.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/screens/main/home/address_selector.dart';
 import 'package:superdriver/presentation/screens/main/home/home_app_bar.dart';
@@ -24,18 +25,40 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
+  static const String _homeOpenedFiamEvent = 'home_opened';
+
+  final _scrollController = ScrollController();
   DeliveryLocationResult? _selectedLocation;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      inAppMessagingService.triggerEvent(_homeOpenedFiamEvent);
       _resolveInitialLocation();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Scrolls to top and refreshes content — called on same-tab re-select.
+  void scrollToTopAndRefresh() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _onRefresh();
   }
 
   bool get _isAuthenticated {
@@ -78,7 +101,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // fallback: GPS
     if (location == null) {
       try {
-        location = await getCurrentLocationAsDefault(fallbackLocationName: l10nLocal.currentLocation);
+        location = await getCurrentLocationAsDefault(
+          fallbackLocationName: l10nLocal.currentLocation,
+        );
       } catch (e) {
         log('HomeScreen [3] GPS FAILED -> $e');
       }
@@ -86,27 +111,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
 
+    final bloc = context.read<HomeBloc>();
+    final hasSameLocation = _isSameLocation(_selectedLocation, location);
     log('HomeScreen [FINAL] -> "${location?.displayName ?? 'NONE'}"');
     setState(() => _selectedLocation = location);
-    context.read<HomeBloc>().add(
-      HomeLoadRequested(lat: location?.latitude, lng: location?.longitude),
-    );
+
+    if (hasSameLocation && bloc.state is HomeLoaded) return;
+
+    final hasExistingData = bloc.state is HomeLoaded;
+    if (hasExistingData) {
+      bloc.add(
+        HomeRefreshRequested(lat: location?.latitude, lng: location?.longitude),
+      );
+    } else {
+      bloc.add(
+        HomeLoadRequested(lat: location?.latitude, lng: location?.longitude),
+      );
+    }
   }
 
   Future<void> _onRefresh() async {
-    context.read<HomeBloc>().add(
+    final bloc = context.read<HomeBloc>();
+    final completer = Completer<void>();
+    bloc.add(
       HomeRefreshRequested(
         lat: _selectedLocation?.latitude,
         lng: _selectedLocation?.longitude,
+        completer: completer,
       ),
+    );
+    await completer.future.timeout(
+      const Duration(seconds: 12),
+      onTimeout: () {},
     );
   }
 
   void _onLocationChanged(DeliveryLocationResult result) {
+    if (_isSameLocation(_selectedLocation, result)) return;
     setState(() => _selectedLocation = result);
     context.read<HomeBloc>().add(
       HomeRefreshRequested(lat: result.latitude, lng: result.longitude),
     );
+  }
+
+  bool _isSameLocation(DeliveryLocationResult? a, DeliveryLocationResult? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return a == b;
+    return a.latitude == b.latitude &&
+        a.longitude == b.longitude &&
+        a.displayName == b.displayName;
   }
 
   void _onLoadMore() {
@@ -124,24 +177,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: ColorsCustom.background,
-        body: BlocConsumer<HomeBloc, HomeState>(
-          listener: _onStateChanged,
-          builder: (context, state) {
-            if (state is HomeLoaded) return _buildContent(context, state);
-            if (state is HomeError) {
-              return HomeErrorView(message: state.message, onRetry: _retryLoad);
-            }
-            return const HomeLoadingView();
-          },
-        ),
+    return Scaffold(
+      backgroundColor: ColorsCustom.background,
+      body: BlocConsumer<HomeBloc, HomeState>(
+        listener: _onStateChanged,
+        builder: (context, state) {
+          if (state is HomeLoaded) return _buildContent(context, state);
+          if (state is HomeError) {
+            return HomeErrorView(message: state.message, onRetry: _retryLoad);
+          }
+          return const HomeLoadingView();
+        },
       ),
     );
   }
@@ -176,11 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildContent(BuildContext context, HomeLoaded state) {
     final l10n = AppLocalizations.of(context)!;
     final data = state.homeData;
+    final bottomScrollSpace = MediaQuery.of(context).padding.bottom + 120;
 
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: ColorsCustom.primary,
+      displacement: 72,
       child: ListView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
@@ -256,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          const SizedBox(height: 100),
+          SizedBox(height: bottomScrollSpace),
         ],
       ),
     );

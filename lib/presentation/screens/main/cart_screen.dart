@@ -7,6 +7,7 @@ import 'package:superdriver/domain/models/cart_model.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
+import 'package:superdriver/presentation/components/main_top_header.dart';
 import 'package:superdriver/presentation/screens/main/cart_detail_screen.dart';
 import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/auth/login_screen.dart';
@@ -22,6 +23,9 @@ class CartScreen extends StatefulWidget {
 }
 
 class CartScreenState extends State<CartScreen> {
+  List<CartSummary> _cachedCarts = const [];
+  String? _lastLoadError;
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +66,7 @@ class CartScreenState extends State<CartScreen> {
 
             return Column(
               children: [
-                _CartHeader(onRefresh: loadCarts),
+                const _CartHeader(),
                 Expanded(
                   child: BlocConsumer<CartBloc, CartState>(
                     listenWhen: (prev, curr) => prev != curr,
@@ -81,7 +85,13 @@ class CartScreenState extends State<CartScreen> {
   void _handleCartState(BuildContext context, CartState state) {
     final l10n = AppLocalizations.of(context)!;
 
-    if (state is CartError) {
+    if (state is CartAllLoaded) {
+      setState(() {
+        _cachedCarts = state.carts;
+        _lastLoadError = null;
+      });
+    } else if (state is CartError) {
+      setState(() => _lastLoadError = state.message);
       _showSnackBar(context, state.message, isError: true);
     } else if (state is CartDeleted) {
       _showSnackBar(context, l10n.cartDeleted, isError: false);
@@ -91,6 +101,14 @@ class CartScreenState extends State<CartScreen> {
 
   Widget _buildContent(CartState state) {
     if (state is CartLoading) {
+      if (_cachedCarts.isNotEmpty) {
+        return _CartsList(
+          carts: _cachedCarts,
+          onRefresh: loadCarts,
+          onCartTap: (cart) => _navigateToCartDetail(context, cart),
+          onDeleteCart: (cart) => _showDeleteDialog(context, cart),
+        );
+      }
       return const _LoadingView();
     }
 
@@ -100,6 +118,30 @@ class CartScreenState extends State<CartScreen> {
       }
       return _CartsList(
         carts: state.carts,
+        onRefresh: loadCarts,
+        onCartTap: (cart) => _navigateToCartDetail(context, cart),
+        onDeleteCart: (cart) => _showDeleteDialog(context, cart),
+      );
+    }
+
+    if (state is CartError) {
+      if (_cachedCarts.isNotEmpty) {
+        return _CartsList(
+          carts: _cachedCarts,
+          onRefresh: loadCarts,
+          onCartTap: (cart) => _navigateToCartDetail(context, cart),
+          onDeleteCart: (cart) => _showDeleteDialog(context, cart),
+        );
+      }
+      return _CartErrorView(
+        message: _lastLoadError ?? state.message,
+        onRetry: loadCarts,
+      );
+    }
+
+    if (_cachedCarts.isNotEmpty) {
+      return _CartsList(
+        carts: _cachedCarts,
         onRefresh: loadCarts,
         onCartTap: (cart) => _navigateToCartDetail(context, cart),
         onDeleteCart: (cart) => _showDeleteDialog(context, cart),
@@ -142,10 +184,11 @@ class CartScreenState extends State<CartScreen> {
   }
 
   void _showDeleteDialog(BuildContext context, CartSummary cart) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     showDialog(
       context: context,
       builder: (ctx) => _DeleteCartDialog(
-        cartName: cart.restaurantName,
+        cartName: cart.getLocalizedRestaurantName(isArabic),
         onCancel: () => Navigator.pop(ctx),
         onDelete: () {
           Navigator.pop(ctx);
@@ -175,61 +218,14 @@ class CartScreenState extends State<CartScreen> {
 }
 
 class _CartHeader extends StatelessWidget {
-  final VoidCallback onRefresh;
-
-  const _CartHeader({required this.onRefresh});
+  const _CartHeader();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(24, topPadding + 16, 16, 20),
-      decoration: BoxDecoration(
-        color: ColorsCustom.surface,
-        boxShadow: ColorsCustom.shadowSm,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          ClipRRect(
-            child: Image.asset(
-              'assets/icons/cart_empty_state.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextCustom(
-                text: l10n.cart,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: ColorsCustom.textPrimary,
-              ),
-              const SizedBox(height: 4),
-              BlocBuilder<CartBloc, CartState>(
-                builder: (context, state) {
-                  final totalItems = state is CartAllLoaded
-                      ? state.carts.fold<int>(0, (sum, c) => sum + c.itemsCount)
-                      : 0;
-                  return TextCustom(
-                    text: '${l10n.items}: $totalItems',
-                    fontSize: 13,
-                    color: ColorsCustom.secondaryDark,
-                  );
-                },
-              ),
-            ],
-          ),
-          Spacer(),
-          _IconButton(icon: Icons.refresh_rounded, onTap: onRefresh),
-        ],
-      ),
+    return MainTopHeader(
+      title: l10n.cart,
+      iconAsset: 'assets/icons/cart_empty_state.png',
     );
   }
 }
@@ -355,6 +351,66 @@ class _EmptyCartView extends StatelessWidget {
   }
 }
 
+class _CartErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _CartErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: const BoxDecoration(
+                color: ColorsCustom.errorBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                size: 46,
+                color: ColorsCustom.error,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextCustom(
+              text: l10n.errorOccurred,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: ColorsCustom.textPrimary,
+            ),
+            const SizedBox(height: 8),
+            TextCustom(
+              text: message,
+              fontSize: 14,
+              color: ColorsCustom.textSecondary,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ButtonCustom.primary(
+              text: l10n.retry,
+              onPressed: onRetry,
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
 
@@ -383,14 +439,18 @@ class _CartsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomListSpace = MediaQuery.of(context).padding.bottom + 120;
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       color: ColorsCustom.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: EdgeInsets.fromLTRB(16, 18, 16, bottomListSpace),
         itemCount: carts.length,
         itemBuilder: (_, index) => Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 16),
           child: _CartSummaryCard(
             cart: carts[index],
             onTap: () => onCartTap(carts[index]),
@@ -420,25 +480,31 @@ class _CartSummaryCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: ColorsCustom.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: cart.isExpired
               ? ColorsCustom.error.withAlpha(128)
               : ColorsCustom.border,
         ),
-        boxShadow: ColorsCustom.shadowSm,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(cart.isExpired ? 8 : 16),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: cart.isExpired ? null : onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(l10n),
+                _buildHeader(context, l10n),
                 const SizedBox(height: 14),
                 if (cart.itemsPreview.isNotEmpty) _buildItemsPreview(l10n),
                 if (cart.isExpired)
@@ -466,7 +532,8 @@ class _CartSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(AppLocalizations l10n) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     return Row(
       children: [
         _RestaurantLogo(url: getFullImageUrl(cart.restaurantLogo)),
@@ -476,16 +543,27 @@ class _CartSummaryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextCustom(
-                text: cart.restaurantName,
+                text: cart.getLocalizedRestaurantName(isArabic),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: ColorsCustom.textPrimary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 3),
-              TextCustom(
-                text: '${l10n.items}: ${cart.itemsCount}',
-                fontSize: 13,
-                color: ColorsCustom.secondaryDark,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: ColorsCustom.background,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: ColorsCustom.border),
+                ),
+                child: TextCustom(
+                  text: '${l10n.items}: ${cart.itemsCount}',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ColorsCustom.secondaryDark,
+                ),
               ),
             ],
           ),
@@ -506,8 +584,9 @@ class _CartSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: ColorsCustom.background,
+        color: ColorsCustom.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ColorsCustom.border.withAlpha(140)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,22 +620,29 @@ class _CartSummaryCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextCustom(
-              text: l10n.total,
-              fontSize: 12,
-              color: ColorsCustom.textSecondary,
-            ),
-            const SizedBox(height: 2),
-            TextCustom(
-              text: '${cart.totalDouble.toStringAsFixed(0)} ${l10n.currency}',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: ColorsCustom.primary,
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: ColorsCustom.primarySoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextCustom(
+                text: l10n.total,
+                fontSize: 11,
+                color: ColorsCustom.textSecondary,
+              ),
+              const SizedBox(height: 2),
+              TextCustom(
+                text: '${cart.totalDouble.toStringAsFixed(0)} ${l10n.currency}',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ColorsCustom.primary,
+              ),
+            ],
+          ),
         ),
         if (!cart.isExpired)
           Container(
@@ -605,6 +691,7 @@ class _CartItemPreviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -629,7 +716,7 @@ class _CartItemPreviewRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: TextCustom(
-              text: item.productName,
+              text: item.getLocalizedName(isArabic),
               fontSize: 13,
               color: ColorsCustom.textPrimary,
               maxLines: 1,
@@ -670,7 +757,7 @@ class _RestaurantLogo extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: url!,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => _buildPlaceholder(),
+                errorWidget: (context, url, error) => _buildPlaceholder(),
               ),
             )
           : _buildPlaceholder(),

@@ -159,7 +159,7 @@ class RestaurantDetail extends Equatable {
               ?.map((e) => WorkingHours.fromJson(e))
               .toList() ??
           [],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 

@@ -46,11 +46,11 @@ class User extends Equatable {
       governorate: json['governorate']?.toString(),
       role: json['role']?.toString(),
       dateJoined: json['date_joined'] != null
-          ? DateTime.tryParse(json['date_joined'].toString())
+          ? DateTime.tryParse(json['date_joined'].toString())?.toLocal()
           : null,
       isOnline: json['is_online'] == true,
       lastOnline: json['last_online'] != null
-          ? DateTime.tryParse(json['last_online'].toString())
+          ? DateTime.tryParse(json['last_online'].toString())?.toLocal()
           : null,
     );
   }

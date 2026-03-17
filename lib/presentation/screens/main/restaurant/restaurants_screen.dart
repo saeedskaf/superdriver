@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/restaurant/restaurant_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/main/restaurant/restaurant_detail_screen.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
 
 enum RestaurantsScreenMode {
@@ -114,6 +117,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
   final _scrollCtrl = ScrollController();
+  Timer? _searchDebounce;
 
   bool _openNow = false;
   bool _hasDiscount = false;
@@ -147,6 +151,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchCtrl.dispose();
     _searchFocus.dispose();
     _scrollCtrl.removeListener(_onScroll);
@@ -164,6 +169,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   void _load() {
     _currentPage = 1;
     _hasMore = true;
+    _isLoadingMore = false;
     _allItems = [];
 
     final bloc = context.read<RestaurantBloc>();
@@ -188,15 +194,16 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     if (_isLoadingMore || !_hasMore) return;
     if (widget.mode == RestaurantsScreenMode.nearby) return;
 
+    final nextPage = _currentPage + 1;
     setState(() => _isLoadingMore = true);
-    _currentPage++;
+    final nextFilters = _filters(page: nextPage);
     context.read<RestaurantBloc>().add(
-      RestaurantsLoadRequested(filters: _filters()),
+      RestaurantsLoadMoreRequested(filters: nextFilters),
     );
   }
 
   /// Build filter params including location (Fix 4) and pagination (Fix 5).
-  RestaurantFilterParams _filters() => RestaurantFilterParams(
+  RestaurantFilterParams _filters({int? page}) => RestaurantFilterParams(
     categoryId: widget.mode == RestaurantsScreenMode.category
         ? widget.categoryId
         : null,
@@ -207,7 +214,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     ordering: _sorting ?? _defaultSort(),
     lat: widget.latitude,
     lng: widget.longitude,
-    page: _currentPage,
+    page: page ?? _currentPage,
     pageSize: _pageSize,
   );
 
@@ -219,10 +226,21 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
 
   void _onSearch(String q) {
     setState(() => _query = q.trim());
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), _load);
+  }
+
+  void _onSearchSubmitted(String q) {
+    _searchDebounce?.cancel();
+    setState(() => _query = q.trim());
+    if (_query.isNotEmpty) {
+      inAppMessagingService.triggerEvent('search_performed');
+    }
     _load();
   }
 
   void _clearSearch() {
+    _searchDebounce?.cancel();
     _searchCtrl.clear();
     setState(() => _query = '');
     _load();
@@ -255,6 +273,37 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           .toList();
     }
     return list;
+  }
+
+  bool _matchesCurrentFilters(
+    RestaurantFilterParams? filters, {
+    bool ignorePage = false,
+  }) {
+    if (widget.mode == RestaurantsScreenMode.nearby) return true;
+    if (filters == null) return false;
+    final current = _filters();
+    if (!ignorePage) return filters == current;
+
+    return filters.categoryId == current.categoryId &&
+        filters.hasDiscount == current.hasDiscount &&
+        filters.isFeatured == current.isFeatured &&
+        filters.isCurrentlyOpen == current.isCurrentlyOpen &&
+        filters.ordering == current.ordering &&
+        filters.restaurantType == current.restaurantType &&
+        filters.search == current.search &&
+        filters.lat == current.lat &&
+        filters.lng == current.lng;
+  }
+
+  List<RestaurantListItem> _mergeUniqueById(
+    List<RestaurantListItem> current,
+    List<RestaurantListItem> incoming,
+  ) {
+    final map = {for (final item in current) item.id: item};
+    for (final item in incoming) {
+      map[item.id] = item;
+    }
+    return map.values.toList();
   }
 
   String _title(AppLocalizations l10n) {
@@ -307,27 +356,49 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
             child: BlocConsumer<RestaurantBloc, RestaurantState>(
               listener: (_, s) {
                 if (s is RestaurantsLoaded) {
+                  if (!_matchesCurrentFilters(s.filters)) return;
                   final incoming = s.restaurants;
                   setState(() {
-                    if (_isLoadingMore) {
-                      _allItems = [..._allItems, ...incoming];
-                      _hasMore = incoming.length >= _pageSize;
-                      _isLoadingMore = false;
-                    } else {
-                      _allItems = incoming;
-                      _hasMore = incoming.length >= _pageSize;
-                    }
+                    _allItems = incoming;
+                    _hasMore = incoming.length >= _pageSize;
+                    _isLoadingMore = false;
+                  });
+                }
+                if (s is RestaurantsLoadMoreLoaded) {
+                  if (!_matchesCurrentFilters(s.filters, ignorePage: true)) {
+                    return;
+                  }
+                  final incoming = s.restaurants;
+                  setState(() {
+                    _currentPage = s.filters.page ?? (_currentPage + 1);
+                    _allItems = _mergeUniqueById(_allItems, incoming);
+                    _hasMore = incoming.length >= _pageSize;
+                    _isLoadingMore = false;
                   });
                 }
                 if (s is NearbyRestaurantsLoaded) {
                   setState(() {
                     _allItems = s.restaurants;
                     _hasMore = false;
+                    _isLoadingMore = false;
                   });
+                }
+                if (s is RestaurantsLoadMoreError) {
+                  if (!_matchesCurrentFilters(s.filters, ignorePage: true)) {
+                    return;
+                  }
+                  setState(() => _isLoadingMore = false);
                 }
                 if (s is RestaurantsEmpty ||
                     s is RestaurantsSearchEmpty ||
                     s is RestaurantsError) {
+                  final filters = switch (s) {
+                    RestaurantsEmpty e => e.filters,
+                    RestaurantsSearchEmpty e => e.filters,
+                    RestaurantsError e => e.filters,
+                    _ => null,
+                  };
+                  if (!_matchesCurrentFilters(filters)) return;
                   if (_isLoadingMore) {
                     setState(() {
                       _hasMore = false;
@@ -374,11 +445,18 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
         left: 16,
         right: 16,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ColorsCustom.surface,
         border: Border(
           bottom: BorderSide(color: ColorsCustom.border, width: 0.5),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -423,14 +501,21 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
         height: 48,
         decoration: BoxDecoration(
           color: ColorsCustom.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ColorsCustom.border),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: ColorsCustom.border, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(8),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: TextField(
           controller: _searchCtrl,
           focusNode: _searchFocus,
           onChanged: _onSearch,
-          onSubmitted: _onSearch,
+          onSubmitted: _onSearchSubmitted,
           textInputAction: TextInputAction.search,
           style: const TextStyle(
             fontSize: 14,
@@ -444,10 +529,13 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               fontSize: 14,
               fontFamily: 'Cairo',
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: ColorsCustom.textHint,
-              size: 22,
+            prefixIcon: const Padding(
+              padding: EdgeInsetsDirectional.only(start: 6),
+              child: Icon(
+                Icons.search_rounded,
+                color: ColorsCustom.primary,
+                size: 21,
+              ),
             ),
             suffixIcon: _searchCtrl.text.isNotEmpty
                 ? IconButton(
@@ -478,14 +566,19 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   }
 
   Widget _buildFilters(AppLocalizations l10n) {
-    final hasActive =
-        _openNow || _hasDiscount || _freeDelivery || _sorting != null;
+    final isDefaultDiscount =
+        widget.mode == RestaurantsScreenMode.discount && _hasDiscount;
+    final hasActive = _openNow ||
+        (_hasDiscount && !isDefaultDiscount) ||
+        _freeDelivery ||
+        _sorting != _defaultSort();
 
-    return SizedBox(
-      height: 52,
+    return Container(
+      height: 56,
+      margin: const EdgeInsets.only(bottom: 2),
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         children: [
           // Clear indicator
           if (hasActive)
@@ -565,7 +658,15 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     }
 
     // Errors (only show full-screen if no cached data)
-    if (s is RestaurantsError && _allItems.isEmpty) {
+    if (s is RestaurantsError && !_matchesCurrentFilters(s.filters)) {
+      if (_allItems.isNotEmpty) return _buildList(_clientFilter(_allItems));
+      return const Center(
+        child: CircularProgressIndicator(color: ColorsCustom.primary),
+      );
+    }
+    if (s is RestaurantsError &&
+        _allItems.isEmpty &&
+        _matchesCurrentFilters(s.filters)) {
       return _StateView.error(msg: s.message, onRetry: _load);
     }
     if (s is NearbyRestaurantsError) {
@@ -573,12 +674,26 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     }
 
     // Empty
+    if (s is RestaurantsSearchEmpty && !_matchesCurrentFilters(s.filters)) {
+      if (_allItems.isNotEmpty) return _buildList(_clientFilter(_allItems));
+      return const Center(
+        child: CircularProgressIndicator(color: ColorsCustom.primary),
+      );
+    }
+
     if ((s is RestaurantsEmpty || s is NearbyRestaurantsEmpty) &&
         _allItems.isEmpty) {
+      if (s is RestaurantsEmpty && !_matchesCurrentFilters(s.filters)) {
+        return const Center(
+          child: CircularProgressIndicator(color: ColorsCustom.primary),
+        );
+      }
       final hasF = _openNow || _hasDiscount || _freeDelivery;
       return _StateView.empty(onClear: hasF ? _clearFilters : null);
     }
-    if (s is RestaurantsSearchEmpty) {
+    if (s is RestaurantsSearchEmpty &&
+        _allItems.isEmpty &&
+        _matchesCurrentFilters(s.filters)) {
       return _StateView.searchEmpty(query: s.query);
     }
 
@@ -608,9 +723,9 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           color: ColorsCustom.primary,
           child: ListView.separated(
             controller: _scrollCtrl,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: list.length + (_hasMore ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+            itemCount: list.length + ((_hasMore && _isLoadingMore) ? 1 : 0),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (_, i) {
               // Pagination loading indicator
               if (i >= list.length) {
@@ -675,13 +790,23 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: isActive ? activeBg : ColorsCustom.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isActive ? activeColor.withAlpha(128) : ColorsCustom.border,
+            width: isActive ? 1 : 0.9,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: activeColor.withAlpha(22),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -723,13 +848,23 @@ class _SortChip extends StatelessWidget {
       onTap: () => _showSheet(context),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: on ? ColorsCustom.primary : ColorsCustom.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: on ? ColorsCustom.primary : ColorsCustom.border,
+            width: on ? 1 : 0.9,
           ),
+          boxShadow: on
+              ? [
+                  BoxShadow(
+                    color: ColorsCustom.primary.withAlpha(38),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

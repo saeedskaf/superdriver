@@ -6,6 +6,12 @@ import 'package:superdriver/presentation/themes/colors_custom.dart';
 class AppTheme {
   AppTheme._();
 
+  static const statusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  );
+
   static final _borderRadius = BorderRadius.circular(12);
   static final _buttonBorderRadius = BorderRadius.circular(14);
 
@@ -38,11 +44,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: ColorsCustom.textPrimary,
         ),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-        ),
+        systemOverlayStyle: statusBarStyle,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

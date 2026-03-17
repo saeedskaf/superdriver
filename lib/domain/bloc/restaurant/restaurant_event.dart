@@ -17,6 +17,16 @@ class RestaurantsLoadRequested extends RestaurantEvent {
   List<Object?> get props => [filters];
 }
 
+/// Load next restaurants page for pagination only.
+class RestaurantsLoadMoreRequested extends RestaurantEvent {
+  final RestaurantFilterParams filters;
+
+  const RestaurantsLoadMoreRequested({required this.filters});
+
+  @override
+  List<Object?> get props => [filters];
+}
+
 /// Refresh current restaurant list
 class RestaurantsRefreshRequested extends RestaurantEvent {
   const RestaurantsRefreshRequested();

@@ -365,6 +365,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get otpResent => 'تم إعادة إرسال رمز التحقق بنجاح';
 
   @override
+  String get otpViaWhatsAppNotice => 'سيتم إرسال رمز التحقق عبر واتساب';
+
+  @override
   String get sendingVerificationCode => 'جاري إرسال رمز التحقق...';
 
   @override
@@ -398,13 +401,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchPlaceholder => 'ابحث عن مطاعم أو أطباق...';
 
   @override
-  String get searchRestaurantsAndFood => 'ابحث عن مطاعم وأطعمة';
-
-  @override
   String get searchHint => 'برغر، بيتزا، شاورما...';
 
   @override
-  String get searchRestaurants => 'ابحث عن مطاعم...';
+  String get searchRestaurants => 'ابحث عن مطعم، وجبة أو صنف...';
 
   @override
   String get searchResults => 'نتائج البحث';
@@ -1260,6 +1260,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusAccepted => 'تم القبول';
 
   @override
+  String get statusConfirmed => 'تمت الموافقة';
+
+  @override
   String get statusPreparing => 'جاري التحضير';
 
   @override
@@ -1276,6 +1279,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get statusCancelled => 'ملغي';
+
+  @override
+  String get waitingForScheduledTime => 'ينتظر وقت التوصيل';
 
   @override
   String get orderCreated => 'تم إنشاء الطلب';
@@ -1407,6 +1413,73 @@ class AppLocalizationsAr extends AppLocalizations {
   String get privacyPolicy => 'سياسة الخصوصية';
 
   @override
+  String get legalLastUpdated => 'آخر تحديث: مارس 2026';
+
+  @override
+  String get legalTermsIntro =>
+      'باستخدامك لتطبيق SuperDriver فإنك توافق على هذه الشروط، والتي تساعدنا على تقديم خدمة آمنة وعادلة وموثوقة للجميع.';
+
+  @override
+  String get legalTermsSectionUseTitle => 'استخدام الخدمة';
+
+  @override
+  String get legalTermsSectionUseBody =>
+      'يجب استخدام التطبيق بشكل قانوني وتقديم معلومات صحيحة عند التسجيل. أنت مسؤول عن أي نشاط يتم عبر حسابك.';
+
+  @override
+  String get legalTermsSectionOrdersTitle => 'الطلبات والإلغاء';
+
+  @override
+  String get legalTermsSectionOrdersBody =>
+      'توفر الطلبات ومدة التحضير وخيارات الإلغاء تعتمد على حالة المتجر ومرحلة الطلب وقت التنفيذ.';
+
+  @override
+  String get legalTermsSectionPaymentsTitle => 'الأسعار والدفع';
+
+  @override
+  String get legalTermsSectionPaymentsBody =>
+      'الأسعار المعروضة تشمل تكلفة المنتجات، وقد تتضمن رسوم توصيل أو خصومات أو رسوم أخرى حسب العروض المفعلة.';
+
+  @override
+  String get legalTermsSectionUpdatesTitle => 'تحديث الشروط';
+
+  @override
+  String get legalTermsSectionUpdatesBody =>
+      'قد نقوم بتحديث هذه الشروط عند الحاجة. استمرارك في استخدام التطبيق بعد التحديث يعني موافقتك على النسخة الجديدة.';
+
+  @override
+  String get legalPrivacyIntro =>
+      'خصوصيتك مهمة لنا. توضح هذه السياسة ما البيانات التي نجمعها، ولماذا نجمعها، وكيف نحميها.';
+
+  @override
+  String get legalPrivacySectionCollectedTitle => 'البيانات التي نجمعها';
+
+  @override
+  String get legalPrivacySectionCollectedBody =>
+      'قد نجمع بيانات الحساب ورقم الهاتف والعناوين وسجل الطلبات وبعض بيانات الجهاز اللازمة لتشغيل التطبيق.';
+
+  @override
+  String get legalPrivacySectionUsageTitle => 'كيف نستخدم البيانات';
+
+  @override
+  String get legalPrivacySectionUsageBody =>
+      'نستخدم البيانات لتنفيذ الطلبات، وتحسين جودة الخدمة، وتقديم الدعم، وإرسال التحديثات المهمة، وحماية حسابك.';
+
+  @override
+  String get legalPrivacySectionSharingTitle => 'متى نشارك البيانات';
+
+  @override
+  String get legalPrivacySectionSharingBody =>
+      'نشارك الحد الأدنى الضروري من البيانات مع المتاجر وشركاء التوصيل ومزودي الخدمة لإتمام الطلب وتشغيل المنصة.';
+
+  @override
+  String get legalPrivacySectionSecurityTitle => 'الحماية والاحتفاظ';
+
+  @override
+  String get legalPrivacySectionSecurityBody =>
+      'نطبق إجراءات تقنية وتنظيمية مناسبة لحماية بياناتك، ونحتفظ بها فقط للمدة اللازمة لتقديم الخدمة والالتزامات النظامية.';
+
+  @override
   String get logoutConfirmation => 'هل أنت متأكد من تسجيل الخروج من حسابك؟';
 
   @override
@@ -1492,6 +1565,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileTab => 'الملف الشخصي';
+
+  @override
+  String get orderCenterTab => 'اطلب';
 
   @override
   String get chat => 'المحادثات';
@@ -1903,6 +1979,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get emailCopied => 'تم نسخ البريد الإلكتروني بنجاح';
+
+  @override
+  String get orderNumberCopied => 'تم نسخ رقم الطلب';
 
   @override
   String get whatsapp => 'واتساب';

@@ -107,7 +107,7 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
             ),
             child: const Icon(
               Icons.close_rounded,
-              size: 20,
+              size: 18,
               color: ColorsCustom.primary,
             ),
           ),
@@ -142,7 +142,10 @@ class _DriverReviewScreenState extends State<DriverReviewScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: ColorsCustom.primary.withAlpha(51)),
             ),
-            child: Image.asset('assets/icons/driver_illustration.png', fit: BoxFit.contain),
+            child: Image.asset(
+              'assets/icons/driver_illustration.png',
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(

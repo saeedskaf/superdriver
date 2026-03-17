@@ -9,14 +9,34 @@ class AuthServices {
   static const Duration _timeout = Duration(seconds: 30);
 
   String _formatPhoneNumber(String phone) {
-    String cleaned = phone.replaceAll(RegExp(r'[^\d]'), '');
-    if (cleaned.startsWith('963')) {
-      cleaned = cleaned.substring(3);
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+
+    String stripNationalLeadingZeros(String value) {
+      final stripped = value.replaceFirst(RegExp(r'^0+'), '');
+      return stripped.isEmpty ? value : stripped;
     }
-    if (!cleaned.startsWith('0')) {
-      cleaned = '0$cleaned';
+
+    // Normalize known formats to strict E.164:
+    // +9639..., +447... (and remove accidental trunk "0" after country code).
+    if (digits.startsWith('963')) {
+      final national = stripNationalLeadingZeros(digits.substring(3));
+      return '+963$national';
     }
-    return cleaned;
+
+    if (digits.startsWith('44')) {
+      final national = stripNationalLeadingZeros(digits.substring(2));
+      return '+44$national';
+    }
+
+    // Fallback for local Syrian-style input such as 09xxxxxxxx.
+    if (digits.startsWith('0')) {
+      final national = stripNationalLeadingZeros(digits);
+      return '+963$national';
+    }
+
+    // Last resort: keep international shape even for unknown country inputs.
+    return '+$digits';
   }
 
   Map<String, String> get _headers => {

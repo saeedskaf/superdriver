@@ -7,13 +7,13 @@ import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/components/custom_form_field.dart';
+import 'package:superdriver/presentation/components/legal_document_sheet.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/dialogs/loading_dialog.dart';
 import 'package:superdriver/presentation/dialogs/message_dialog.dart';
 import 'package:superdriver/presentation/utils/form_validator.dart';
 import 'package:superdriver/presentation/screens/auth/otp_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -30,9 +30,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   PhoneNumber? _phoneNumber;
   String? _phoneError;
-
-  static const String _termsUrl = 'https://yourdomain.com/terms';
-  static const String _privacyUrl = 'https://yourdomain.com/privacy';
 
   @override
   void dispose() {
@@ -64,13 +61,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       ),
     );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   @override
@@ -295,7 +285,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fontWeight: FontWeight.w600,
               ),
               recognizer: TapGestureRecognizer()
-                ..onTap = () => _launchUrl(_termsUrl),
+                ..onTap = () => showLegalDocumentSheet(
+                  context,
+                  type: LegalDocumentType.terms,
+                ),
             ),
             TextSpan(text: ' ${l10n.and} '),
             TextSpan(
@@ -305,7 +298,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fontWeight: FontWeight.w600,
               ),
               recognizer: TapGestureRecognizer()
-                ..onTap = () => _launchUrl(_privacyUrl),
+                ..onTap = () => showLegalDocumentSheet(
+                  context,
+                  type: LegalDocumentType.privacy,
+                ),
             ),
           ],
         ),

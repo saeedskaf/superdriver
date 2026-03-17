@@ -21,14 +21,18 @@ class NotificationLoading extends NotificationState {
 
 class NotificationsLoaded extends NotificationState {
   final List<NotificationItem> notifications;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   const NotificationsLoaded({
     required this.notifications,
     required super.unreadCount,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   @override
-  List<Object?> get props => [notifications, unreadCount];
+  List<Object?> get props => [notifications, unreadCount, hasMore, isLoadingMore];
 }
 
 class NotificationError extends NotificationState {

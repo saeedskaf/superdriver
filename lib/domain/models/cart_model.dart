@@ -55,12 +55,12 @@ class Cart {
       discountAmount: json['discount_amount']?.toString() ?? '0',
       total: json['total']?.toString() ?? '0',
       expiresAt: json['expires_at'] != null
-          ? DateTime.tryParse(json['expires_at'])
+          ? DateTime.tryParse(json['expires_at'])?.toLocal()
           : null,
       isExpired: json['is_expired'],
       timeRemainingSeconds: json['time_remaining_seconds'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 
@@ -72,6 +72,17 @@ class Cart {
   bool get isEmpty => items.isEmpty;
   bool get isNotEmpty => items.isNotEmpty;
   bool get hasCoupon => couponCode != null && couponCode!.isNotEmpty;
+}
+
+String _composeBilingualName(String primary, String? secondary) {
+  final first = primary.trim();
+  final second = (secondary ?? '').trim();
+
+  if (first.isEmpty && second.isEmpty) return '';
+  if (second.isEmpty) return first;
+  if (first.isEmpty) return second;
+  if (first.toLowerCase() == second.toLowerCase()) return first;
+  return '$first - $second';
 }
 
 /// Response for all carts endpoint
@@ -145,6 +156,8 @@ class CartItemPreview {
     }
     return productName;
   }
+
+  String get bilingualName => _composeBilingualName(productName, productNameEn);
 }
 
 /// Cart summary for the all carts list
@@ -188,11 +201,11 @@ class CartSummary {
       total: json['total']?.toString() ?? '0',
       itemsPreview: _parseItemsPreview(json['items_preview']),
       expiresAt: json['expires_at'] != null
-          ? DateTime.tryParse(json['expires_at'])
+          ? DateTime.tryParse(json['expires_at'])?.toLocal()
           : null,
       timeRemainingSeconds: json['time_remaining_seconds'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 
@@ -236,6 +249,9 @@ class CartSummary {
     }
     return restaurantName;
   }
+
+  String get bilingualRestaurantName =>
+      _composeBilingualName(restaurantName, restaurantNameEn);
 }
 
 class CartRestaurant {
@@ -273,6 +289,8 @@ class CartRestaurant {
     }
     return name;
   }
+
+  String get bilingualName => _composeBilingualName(name, nameEn);
 }
 
 class CartItem {
@@ -317,7 +335,7 @@ class CartItem {
               ?.map((addon) => CartItemAddon.fromJson(addon))
               .toList() ??
           [],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 
@@ -362,6 +380,8 @@ class CartProduct {
     }
     return name;
   }
+
+  String get bilingualName => _composeBilingualName(name, nameEn);
 }
 
 class CartVariation {
@@ -399,6 +419,8 @@ class CartVariation {
     }
     return name;
   }
+
+  String get bilingualName => _composeBilingualName(name, nameEn);
 }
 
 class CartItemAddon {
@@ -439,6 +461,8 @@ class CartItemAddon {
     }
     return addonName;
   }
+
+  String get bilingualName => _composeBilingualName(addonName, addonNameEn);
 }
 
 class AddToCartRequest {

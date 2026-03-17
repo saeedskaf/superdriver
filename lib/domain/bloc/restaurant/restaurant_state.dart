@@ -40,29 +40,58 @@ class RestaurantsLoaded extends RestaurantState {
 
 class RestaurantsEmpty extends RestaurantState {
   final int? categoryId;
+  final RestaurantFilterParams? filters;
 
-  const RestaurantsEmpty({this.categoryId});
+  const RestaurantsEmpty({this.categoryId, this.filters});
 
   @override
-  List<Object?> get props => [categoryId];
+  List<Object?> get props => [categoryId, filters];
 }
 
 class RestaurantsSearchEmpty extends RestaurantState {
   final String query;
+  final RestaurantFilterParams? filters;
 
-  const RestaurantsSearchEmpty({required this.query});
+  const RestaurantsSearchEmpty({required this.query, this.filters});
 
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [query, filters];
 }
 
 class RestaurantsError extends RestaurantState {
   final String message;
+  final RestaurantFilterParams? filters;
 
-  const RestaurantsError(this.message);
+  const RestaurantsError(this.message, {this.filters});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, filters];
+}
+
+class RestaurantsLoadMoreLoaded extends RestaurantState {
+  final List<RestaurantListItem> restaurants;
+  final RestaurantFilterParams filters;
+
+  const RestaurantsLoadMoreLoaded({
+    required this.restaurants,
+    required this.filters,
+  });
+
+  @override
+  List<Object?> get props => [restaurants, filters];
+}
+
+class RestaurantsLoadMoreError extends RestaurantState {
+  final String message;
+  final RestaurantFilterParams filters;
+
+  const RestaurantsLoadMoreError({
+    required this.message,
+    required this.filters,
+  });
+
+  @override
+  List<Object?> get props => [message, filters];
 }
 
 class RestaurantDetailsLoading extends RestaurantState {

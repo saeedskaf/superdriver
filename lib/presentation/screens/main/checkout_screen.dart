@@ -14,6 +14,8 @@ import 'package:superdriver/presentation/screens/main/order_success_screen.dart'
 import 'package:superdriver/presentation/screens/main/home/home_cards.dart';
 import 'package:superdriver/presentation/screens/main/profile/addresses_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
+import 'package:superdriver/data/services/in_app_messaging_service.dart';
+import 'package:superdriver/presentation/utils/date_time_formatter.dart';
 
 enum DeliveryTimeOption { now, scheduled }
 
@@ -73,28 +75,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  String _normalizePhone(String phone) {
-    if (phone.isEmpty) return '';
-    var cleaned = phone.replaceAll(RegExp(r'[\s\-]'), '');
-
-    if (cleaned.startsWith('+963')) {
-      cleaned = '0${cleaned.substring(4)}';
-    } else if (cleaned.startsWith('00963')) {
-      cleaned = '0${cleaned.substring(5)}';
-    } else if (!cleaned.startsWith('0') && cleaned.length == 9) {
-      cleaned = '0$cleaned';
-    }
-    return cleaned;
-  }
-
-  String _formatPhoneForApi(String phone) {
-    final normalized = _normalizePhone(phone);
-    if (normalized.startsWith('0')) {
-      return '+963${normalized.substring(1)}';
-    }
-    return '+963$normalized';
-  }
-
   String _formatDateTime(DateTime dateTime, AppLocalizations l10n) {
     final now = DateTime.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
@@ -109,10 +89,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
 
-    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
-    final period = dateTime.hour >= 12 ? l10n.pm : l10n.am;
-
-    return '$dateStr، $hour:${dateTime.minute.toString().padLeft(2, '0')} $period';
+    return '$dateStr، ${DateTimeFormatter.formatTimeAmPm(dateTime, l10n)}';
   }
 
   Future<void> _selectDateTime(BuildContext context) async {
@@ -189,7 +166,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         cartId: widget.cart.id,
         deliveryAddressId: _selectedAddressId!,
         paymentMethod: 'cash',
-        contactPhone: _formatPhoneForApi(phone),
+        contactPhone: phone,
         scheduledDeliveryTime:
             _selectedDeliveryTime == DeliveryTimeOption.scheduled
             ? _scheduledTime
@@ -202,11 +179,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _buildMergedNotes() {
     final parts = <String>[];
     final items = widget.cart.items;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     for (int i = 0; i < items.length; i++) {
       final text = _itemNotesControllers[i]?.text.trim() ?? '';
       if (text.isNotEmpty) {
-        parts.add('${items[i].product.name}: $text');
+        parts.add('${items[i].product.getLocalizedName(isArabic)}: $text');
       }
     }
 
@@ -274,7 +252,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (state is ProfileLoaded) {
           setState(() => _isLoadingProfile = false);
           if (!_phonePreFilled && state.phoneNumber.isNotEmpty) {
-            _phoneController.text = _normalizePhone(state.phoneNumber);
+            _phoneController.text = state.phoneNumber;
             _phonePreFilled = true;
           }
         } else if (state is ProfileError) {
@@ -316,6 +294,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             OrderPlaceRequested(orderId: state.order.id),
           );
         } else if (state is OrderPlaced) {
+          inAppMessagingService.triggerEvent('order_placed');
           context.read<CartBloc>().add(const CartReset());
           Navigator.pushAndRemoveUntil(
             context,
@@ -782,10 +761,10 @@ class _PhoneSection extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.blue.withAlpha(26),
+            color: ColorsCustom.info.withAlpha(26),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.phone_rounded, color: Colors.blue, size: 22),
+          child: const Icon(Icons.phone_rounded, color: ColorsCustom.info, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -914,7 +893,7 @@ class _DeliveryTimeSection extends StatelessWidget {
             icon: Icons.schedule_rounded,
             title: l10n.scheduleDelivery,
             subtitle: l10n.chooseSpecificTime,
-            iconColor: Colors.blue,
+            iconColor: ColorsCustom.info,
             isSelected: selectedOption == DeliveryTimeOption.scheduled,
             onTap: () => onOptionChanged(DeliveryTimeOption.scheduled),
           ),
@@ -1125,6 +1104,7 @@ class _ItemNotesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1140,7 +1120,7 @@ class _ItemNotesSection extends StatelessWidget {
           for (int i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(height: 14),
             _ItemNoteField(
-              itemName: items[i].product.name,
+              itemName: items[i].product.getLocalizedName(isArabic),
               quantity: items[i].quantity,
               controller: controllers[i]!,
               focusNode: focusNodes[i]!,
@@ -1242,6 +1222,7 @@ class _OrderSummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1253,6 +1234,30 @@ class _OrderSummarySection extends StatelessWidget {
       ),
       child: Column(
         children: [
+          if (cart.restaurant != null) ...[
+            Row(
+              children: [
+                const Icon(
+                  Icons.storefront_outlined,
+                  size: 16,
+                  color: ColorsCustom.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextCustom(
+                    text: cart.restaurant!.getLocalizedName(isArabic),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: ColorsCustom.textSecondary,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Divider(color: ColorsCustom.border, height: 1),
+            const SizedBox(height: 12),
+          ],
           _buildCartItems(l10n),
           const SizedBox(height: 6),
           const Divider(color: ColorsCustom.border, height: 1),
@@ -1304,6 +1309,7 @@ class _CartItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1311,7 +1317,7 @@ class _CartItemRow extends StatelessWidget {
         children: [
           _buildImage(),
           const SizedBox(width: 10),
-          Expanded(child: _buildInfo()),
+          Expanded(child: _buildInfo(isArabic)),
           TextCustom(
             text:
                 '${item.totalPriceDouble.toStringAsFixed(0)} ${l10n.currency}',
@@ -1358,16 +1364,16 @@ class _CartItemRow extends StatelessWidget {
     );
   }
 
-  Widget _buildInfo() {
+  Widget _buildInfo(bool isArabic) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextCustom(
-          text: item.product.name,
+          text: item.product.getLocalizedName(isArabic),
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: ColorsCustom.textPrimary,
-          maxLines: 1,
+          maxLines: 2,
         ),
         TextCustom(
           text: 'x${item.quantity}',

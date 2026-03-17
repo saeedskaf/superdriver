@@ -62,11 +62,11 @@ class ChatMessage extends Equatable {
     final data = doc.data() as Map<String, dynamic>;
     return ChatMessage(
       id: doc.id,
-      text: data['text'] ?? '',
-      senderId: data['senderId'] ?? '',
-      senderType: data['senderType'] ?? 'user',
-      type: _parseType(data['type']),
-      imageUrl: data['imageUrl'],
+      text: data['text']?.toString() ?? '',
+      senderId: data['senderId']?.toString() ?? '',
+      senderType: data['senderType']?.toString() ?? 'user',
+      type: _parseType(data['type']?.toString()),
+      imageUrl: data['imageUrl']?.toString(),
       locationData: data['locationData'] != null
           ? Map<String, dynamic>.from(data['locationData'])
           : null,
@@ -83,7 +83,7 @@ class ChatMessage extends Equatable {
       'type': _typeToString(type),
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (locationData != null) 'locationData': locationData,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': FieldValue.serverTimestamp(),
       'readAt': readAt != null ? Timestamp.fromDate(readAt!) : null,
     };
   }

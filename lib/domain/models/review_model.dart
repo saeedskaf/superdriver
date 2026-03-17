@@ -76,7 +76,7 @@ class RestaurantReview {
       userName: json['user_name'],
       rating: json['rating'] ?? 0,
       comment: json['comment'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 

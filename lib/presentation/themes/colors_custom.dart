@@ -38,6 +38,17 @@ class ColorsCustom {
   static const Color success = Color(0xFF2E7D32); // #2E7D32
   static const Color successBg = Color(0xFFE8F5E9); // #E8F5E9
 
+  static const Color info = Color(0xFF2563EB); // #2563EB
+  static const Color infoBg = Color(0xFFEFF6FF); // #EFF6FF
+
+  // Chat
+  static const Color chatBackground = Color(0xFFF6F7FB); // #F6F7FB
+  static const Color chatBubble = Color(0xFFF5F7FB); // #F5F7FB
+  static const Color chatInput = Color(0xFFF3F5F9); // #F3F5F9
+  static const Color chatBorder = Color(0xFFE3E7EF); // #E3E7EF
+  static const Color chatDivider = Color(0xFFE7EBF3); // #E7EBF3
+  static const Color chatChip = Color(0xFFF1F4F8); // #F1F4F8
+
   // Shadows
   static final shadowSm = [
     BoxShadow(

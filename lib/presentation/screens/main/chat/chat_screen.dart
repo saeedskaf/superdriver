@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
+import 'package:superdriver/presentation/components/main_top_header.dart';
 import 'package:superdriver/presentation/screens/main/chat/chat_conversation_section.dart';
 import 'package:superdriver/presentation/screens/main/chat/emergency_ticket_screen.dart';
 import 'package:superdriver/presentation/screens/main/chat/new_order_chat_screen.dart';
@@ -33,84 +34,43 @@ class _ChatScreenState extends State<ChatScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F7FB),
-        elevation: 0,
-        titleSpacing: 4,
-        title: _ChatAppBarTitle(title: l10n.chatPageTitle),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: l10n.chatOpenNewOrder,
-                      subtitle: l10n.chatNewOrderSubtitle,
-                      icon: Icons.add_shopping_cart_rounded,
-                      color: ColorsCustom.secondaryDark,
-                      onTap: _openNewOrder,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActionCard(
-                      title: l10n.chatOpenTicket,
-                      subtitle: l10n.chatEmergencySubtitle,
-                      icon: Icons.support_agent_rounded,
-                      color: ColorsCustom.primary,
-                      onTap: _openEmergency,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ChatConversationSection(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                showOrderAddress: false,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatAppBarTitle extends StatelessWidget {
-  final String title;
-
-  const _ChatAppBarTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      backgroundColor: ColorsCustom.background,
+      body: Column(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              'assets/icons/call_center.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
+          MainTopHeader(
+            title: l10n.chatPageTitle,
+            iconAsset: 'assets/icons/call_center.png',
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ActionCard(
+                    title: l10n.chatOpenNewOrder,
+                    subtitle: l10n.chatNewOrderSubtitle,
+                    icon: Icons.add_shopping_cart_rounded,
+                    color: ColorsCustom.secondaryDark,
+                    onTap: _openNewOrder,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ActionCard(
+                    title: l10n.chatOpenTicket,
+                    subtitle: l10n.chatEmergencySubtitle,
+                    icon: Icons.support_agent_rounded,
+                    color: ColorsCustom.primary,
+                    onTap: _openEmergency,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
           Expanded(
-            child: TextCustom(
-              text: title,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: ColorsCustom.textPrimary,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: ChatConversationSection(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              showOrderAddress: false,
             ),
           ),
         ],
@@ -141,8 +101,8 @@ class _ActionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 150),
+        child: SizedBox(
+          height: 170,
           child: Ink(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(

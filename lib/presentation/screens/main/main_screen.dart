@@ -1,8 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:superdriver/domain/bloc/auth/auth_bloc.dart';
+import 'package:superdriver/domain/bloc/chat/chat_unread_cubit.dart';
+import 'package:superdriver/domain/bloc/home/home_bloc.dart';
 import 'package:superdriver/domain/bloc/navigation/navigation_bloc.dart';
+import 'package:superdriver/domain/bloc/orders/orders_bloc.dart';
 import 'package:superdriver/l10n/app_localizations.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/components/custom_text.dart';
@@ -35,9 +39,13 @@ class _MainScreenContent extends StatefulWidget {
 }
 
 class _MainScreenContentState extends State<_MainScreenContent> {
+  final _homeScreenKey = GlobalKey<HomeScreenState>();
+  final _ordersScreenKey = GlobalKey<OrdersScreenState>();
   final _cartScreenKey = GlobalKey<CartScreenState>();
+  final _profileScreenKey = GlobalKey<ProfileScreenState>();
 
   late List<Widget> _screens;
+  late bool _lastAuthValue;
 
   // tabs that need auth
   static const _authRequiredTabs = {1, 2, 3, 4};
@@ -45,19 +53,22 @@ class _MainScreenContentState extends State<_MainScreenContent> {
   @override
   void initState() {
     super.initState();
+    _lastAuthValue = _isAuthenticated;
     _buildScreens();
   }
 
   void _buildScreens() {
     final isAuth = context.read<AuthBloc>().state is AuthAuthenticated;
     _screens = [
-      const HomeScreen(),
-      isAuth ? const OrdersScreen() : const _AuthPlaceholder(),
+      HomeScreen(key: _homeScreenKey),
+      isAuth ? OrdersScreen(key: _ordersScreenKey) : const _AuthPlaceholder(),
       isAuth ? const ChatScreen() : const _AuthPlaceholder(),
       isAuth
           ? CartScreen(key: _cartScreenKey, onNavigateToHome: _navigateToHome)
           : const _AuthPlaceholder(),
-      isAuth ? const ProfileScreen() : const _AuthPlaceholder(),
+      isAuth
+          ? ProfileScreen(key: _profileScreenKey)
+          : const _AuthPlaceholder(),
     ];
   }
 
@@ -75,23 +86,62 @@ class _MainScreenContentState extends State<_MainScreenContent> {
       _showLoginRequiredSheet();
       return;
     }
+
+    final currentIndex = context.read<NavigationBloc>().state.selectedIndex;
+
+    if (currentIndex == index) {
+      // Same tab re-selected → scroll to top + refresh
+      HapticFeedback.lightImpact();
+      _onSameTabReSelected(index);
+      return;
+    }
+
+    HapticFeedback.selectionClick();
     context.read<NavigationBloc>().add(NavigateToTab(index));
+  }
+
+  void _onSameTabReSelected(int index) {
+    switch (index) {
+      case 0:
+        _homeScreenKey.currentState?.scrollToTopAndRefresh();
+        break;
+      case 1:
+        _ordersScreenKey.currentState?.scrollToTopAndRefresh();
+        break;
+      case 3:
+        _cartScreenKey.currentState?.loadCarts();
+        break;
+      case 4:
+        _profileScreenKey.currentState?.scrollToTopAndRefresh();
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) =>
+          previous.runtimeType != current.runtimeType,
       listener: (context, authState) {
         if (authState is AuthAuthenticated ||
             authState is AuthUnauthenticated) {
+          final isAuthNow = authState is AuthAuthenticated;
+          if (_lastAuthValue == isAuthNow) return;
+          _lastAuthValue = isAuthNow;
           setState(() => _buildScreens());
-          if (authState is AuthUnauthenticated) {
+          if (isAuthNow) {
+            context.read<HomeBloc>().add(const HomeUserLoggedIn());
+          } else {
+            context.read<HomeBloc>().add(const HomeUserLoggedOut());
             context.read<NavigationBloc>().add(const NavigateToTab(0));
           }
         }
       },
       child: BlocConsumer<NavigationBloc, NavigationState>(
         listener: (context, state) {
+          if (state.selectedIndex == 1) {
+            _refreshOrdersIfNeeded();
+          }
           if (state.selectedIndex == 3) {
             _refreshCartIfNeeded();
           }
@@ -105,6 +155,12 @@ class _MainScreenContentState extends State<_MainScreenContent> {
         },
       ),
     );
+  }
+
+  void _refreshOrdersIfNeeded() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrdersBloc>().add(const OrdersRefreshRequested());
+    });
   }
 
   void _refreshCartIfNeeded() {
@@ -212,16 +268,16 @@ class _BottomNavBar extends StatelessWidget {
   static const double _barHeight = 65;
   static const double _logoSize = 100;
   static const double _logoOverhang = 25;
+  static const double _bottomPadding = 20;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final bottomPadding = 20.0;
 
     return BlocBuilder<NavigationBloc, NavigationState>(
       builder: (context, state) {
         return SizedBox(
-          height: _barHeight + bottomPadding + _logoOverhang,
+          height: _barHeight + _bottomPadding + _logoOverhang,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -230,8 +286,13 @@ class _BottomNavBar extends StatelessWidget {
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  height: _barHeight + bottomPadding,
-                  padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomPadding),
+                  height: _barHeight + _bottomPadding,
+                  padding: const EdgeInsets.fromLTRB(
+                    12,
+                    8,
+                    12,
+                    8 + _bottomPadding,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -280,14 +341,29 @@ class _BottomNavBar extends StatelessWidget {
               ),
 
               Positioned(
-                bottom: _barHeight + bottomPadding - _logoSize + _logoOverhang,
+                bottom: _barHeight + _bottomPadding - _logoSize + _logoOverhang,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: _CenterLogo(
-                    size: _logoSize,
-                    isSelected: state.selectedIndex == 2,
-                    onTap: () => onTabSelected(2),
+                  child: BlocBuilder<ChatUnreadCubit, int>(
+                    builder: (context, unreadCount) {
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _CenterLogo(
+                            size: _logoSize,
+                            isSelected: state.selectedIndex == 2,
+                            onTap: () => onTabSelected(2),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              top: 35,
+                              right: 35,
+                              child: _UnreadBadge(count: unreadCount),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -317,12 +393,22 @@ class _CenterLogo extends StatefulWidget {
 class _CenterLogoState extends State<_CenterLogo>
     with SingleTickerProviderStateMixin {
   late final AnimationController _spinCtrl;
+  static const String _legacyBgAr = 'assets/icons/nav_logo_ar.png';
+  static const String _legacyBgEn = 'assets/icons/nav_logo_en.png';
+  static const String _legacyCenterIcon = 'assets/icons/nav_app_logo.png';
+  static const double _centerBgScale = 0.92;
+  static const double _centerIconScale = 0.4;
+  static const double _centerIconYOffset = -10;
+  static const double _centerLabelYOffset = 15;
+  static const double _tapScaleBoost = 0.08;
+  static const double _tapLiftHeight = -6;
+  static const double _rotationWobble = 0.08;
 
   @override
   void initState() {
     super.initState();
     _spinCtrl = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 650),
       vsync: this,
     );
   }
@@ -334,26 +420,46 @@ class _CenterLogoState extends State<_CenterLogo>
   }
 
   void _onTap() {
+    if (_spinCtrl.isAnimating) {
+      _spinCtrl.stop();
+    }
     _spinCtrl.forward(from: 0.0);
     widget.onTap();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final centerBgAsset = isAr
+        ? 'assets/icons/nav_center_bg_ar.png'
+        : 'assets/icons/nav_center_bg_en.png';
+    final legacyBgAsset = isAr ? _legacyBgAr : _legacyBgEn;
+    final centerLabelColor = widget.isSelected
+        ? ColorsCustom.primary
+        : ColorsCustom.textHint;
+    final centerBgSize = widget.size * _centerBgScale;
+    final centerIconSize = widget.size * _centerIconScale;
     return GestureDetector(
       onTap: _onTap,
       child: AnimatedBuilder(
         animation: _spinCtrl,
-        builder: (_, __) {
-          final t = _spinCtrl.value;
+        builder: (context, child) {
+          final rawT = _spinCtrl.value;
+          final t = Curves.easeInOutCubic.transform(rawT);
+          final pulse = sin(rawT * pi);
+          final scale = 1.0 + _tapScaleBoost * pulse;
+          final lift = _tapLiftHeight * pulse;
+          final glowAlpha = ((1.0 - rawT) * 110).round().clamp(0, 110);
+          final rotationAngle =
+              (t * 2 * pi) + (sin(rawT * pi) * _rotationWobble);
           return SizedBox(
             width: widget.size + 40,
             height: widget.size + 40,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                if (t > 0 && t < 1)
+                if (rawT > 0 && rawT < 1)
                   CustomPaint(
                     size: Size(widget.size + 40, widget.size + 40),
                     painter: _FirePainter(
@@ -361,18 +467,82 @@ class _CenterLogoState extends State<_CenterLogo>
                       baseColor: ColorsCustom.primary,
                     ),
                   ),
-                Transform.rotate(
-                  angle: t * 2 * pi,
-                  child: SizedBox(
-                    width: widget.size,
-                    height: widget.size,
-                    child: Image.asset(
-                      isAr
-                          ? 'assets/icons/nav_logo_ar.png'
-                          : 'assets/icons/nav_logo_en.png',
-                      width: widget.size,
-                      height: widget.size,
-                      fit: BoxFit.contain,
+                Transform.translate(
+                  offset: Offset(0, lift),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (rawT > 0 && rawT < 1)
+                          Container(
+                            width: centerBgSize * 0.9,
+                            height: centerBgSize * 0.9,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ColorsCustom.primary.withAlpha(
+                                    glowAlpha,
+                                  ),
+                                  blurRadius: 24,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        Transform.rotate(
+                          angle: rotationAngle,
+                          child: SizedBox(
+                            width: widget.size,
+                            height: widget.size,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Image.asset(
+                                  centerBgAsset,
+                                  width: centerBgSize,
+                                  height: centerBgSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Image.asset(
+                                        legacyBgAsset,
+                                        width: centerBgSize,
+                                        height: centerBgSize,
+                                        fit: BoxFit.contain,
+                                      ),
+                                ),
+                                Transform.translate(
+                                  offset: const Offset(0, _centerIconYOffset),
+                                  child: Image.asset(
+                                    'assets/icons/nav_center_icon.png',
+                                    width: centerIconSize,
+                                    height: centerIconSize,
+                                    fit: BoxFit.contain,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Image.asset(
+                                              _legacyCenterIcon,
+                                              width: centerIconSize,
+                                              height: centerIconSize,
+                                              fit: BoxFit.contain,
+                                            ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Transform.translate(
+                          offset: const Offset(0, _centerLabelYOffset),
+                          child: TextCustom(
+                            text: l10n.orderCenterTab,
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                            color: centerLabelColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -479,6 +649,84 @@ class _NavItem extends StatelessWidget {
                 color: color,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unread chat badge with pulse animation
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _UnreadBadge extends StatefulWidget {
+  final int count;
+
+  const _UnreadBadge({required this.count});
+
+  @override
+  State<_UnreadBadge> createState() => _UnreadBadgeState();
+}
+
+class _UnreadBadgeState extends State<_UnreadBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = widget.count > 99 ? '99+' : '${widget.count}';
+
+    return AnimatedBuilder(
+      animation: _scaleAnim,
+      builder: (context, child) {
+        return Transform.scale(scale: _scaleAnim.value, child: child);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: ColorsCustom.error,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: ColorsCustom.error.withAlpha(100),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              height: 1.1,
+            ),
           ),
         ),
       ),

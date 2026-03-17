@@ -1,5 +1,22 @@
 // lib/domain/models/notification_model.dart
 
+DateTime? _parseBackendDateTime(dynamic value) {
+  if (value == null) return null;
+  final raw = value.toString().trim();
+  if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+
+  final normalized = raw.replaceFirst(' ', 'T');
+  return DateTime.tryParse(normalized)?.toLocal();
+}
+
+/// Paginated wrapper for notification list responses
+class NotificationPage {
+  final List<NotificationItem> items;
+  final bool hasMore;
+
+  const NotificationPage({required this.items, required this.hasMore});
+}
+
 /// Notification list item — from GET /api/notifications/
 class NotificationItem {
   final int id;
@@ -22,6 +39,19 @@ class NotificationItem {
     required this.createdAt,
   });
 
+  NotificationItem copyWith({bool? isRead}) {
+    return NotificationItem(
+      id: id,
+      notificationType: notificationType,
+      title: title,
+      titleEn: titleEn,
+      body: body,
+      bodyEn: bodyEn,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
+    );
+  }
+
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
     return NotificationItem(
       id: json['id'] ?? 0,
@@ -31,7 +61,7 @@ class NotificationItem {
       body: json['body'] ?? '',
       bodyEn: json['body_en'],
       isRead: json['is_read'] == true,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: _parseBackendDateTime(json['created_at']) ?? DateTime.now(),
     );
   }
 }
@@ -84,9 +114,9 @@ class NotificationDetail {
       data: json['data'] is String ? json['data'] : json['data']?.toString(),
       isRead: json['is_read'] == true,
       readAt: json['read_at'] != null
-          ? DateTime.tryParse(json['read_at'])
+          ? _parseBackendDateTime(json['read_at'])
           : null,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      createdAt: _parseBackendDateTime(json['created_at']) ?? DateTime.now(),
     );
   }
 }

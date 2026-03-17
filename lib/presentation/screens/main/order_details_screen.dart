@@ -10,6 +10,7 @@ import 'package:superdriver/presentation/components/custom_text.dart';
 import 'package:superdriver/presentation/components/custom_button.dart';
 import 'package:superdriver/presentation/screens/main/driver_review_screen.dart';
 import 'package:superdriver/presentation/themes/colors_custom.dart';
+import 'package:superdriver/presentation/utils/date_time_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
@@ -26,13 +27,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _isCancelling = false;
-
-  static const List<String> _statusFlow = [
-    'placed',
-    'preparing',
-    'picked',
-    'delivered',
-  ];
 
   @override
   void initState() {
@@ -387,8 +381,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _copyOrderNumber(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     Clipboard.setData(ClipboardData(text: _order!.orderNumber));
-    _showSnackBar(context, 'تم نسخ رقم الطلب', isError: false);
+    _showSnackBar(context, l10n.orderNumberCopied, isError: false);
   }
 
   Widget _buildScheduledDeliveryCard(AppLocalizations l10n) {
@@ -396,9 +391,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withAlpha(15),
+        color: ColorsCustom.info.withAlpha(15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withAlpha(77)),
+        border: Border.all(color: ColorsCustom.info.withAlpha(77)),
       ),
       child: Row(
         children: [
@@ -406,12 +401,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.blue.withAlpha(26),
+              color: ColorsCustom.info.withAlpha(26),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.schedule_rounded,
-              color: Colors.blue,
+              color: ColorsCustom.info,
               size: 22,
             ),
           ),
@@ -424,7 +419,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   text: l10n.scheduledDelivery,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: ColorsCustom.info,
                 ),
                 const SizedBox(height: 2),
                 TextCustom(
@@ -433,7 +428,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     l10n,
                   ),
                   fontSize: 13,
-                  color: Colors.blue,
+                  color: ColorsCustom.info,
                 ),
               ],
             ),
@@ -458,12 +453,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       dayPart = DateFormat('EEEE، d MMMM', locale).format(dateTime);
     }
 
-    final timePart = DateFormat('HH:mm').format(dateTime);
+    final timePart = DateTimeFormatter.formatTimeAmPm(dateTime, l10n);
     return '$dayPart ${l10n.atTime} $timePart';
   }
 
   Widget _buildStatusCard(AppLocalizations l10n) {
-    final statusInfo = _getStatusInfo(_order!.status, l10n);
+    final statusInfo = _getStatusInfo(
+      _order!.status,
+      l10n,
+      isScheduled: _order!.isScheduled,
+    );
     final Color color = statusInfo['color'];
 
     return Container(
@@ -532,7 +531,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         const SizedBox(width: 4),
                         TextCustom(
                           text:
-                              '${l10n.estimatedArrival}: ${DateFormat('HH:mm').format(_order!.estimatedDeliveryTime!)}',
+                              '${l10n.estimatedArrival}: ${DateTimeFormatter.formatTimeAmPm(_order!.estimatedDeliveryTime!, l10n)}',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: ColorsCustom.primary,
@@ -628,14 +627,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildTimeline(AppLocalizations l10n) {
-    final currentStatusIndex = _statusFlow.indexOf(_order!.status);
+    final statusFlow = _statusFlowForOrder(_order!);
+    final currentStatusIndex = statusFlow.indexOf(_order!.status);
 
-    final steps = [
+    final List<Map<String, String>> steps = [
       {
         'status': 'placed',
         'label': l10n.statusPlaced,
-        'image': 'assets/icons/status_confirmed.png',
+        'image': 'assets/icons/status_pending.png',
       },
+      if (_order!.isScheduled)
+        {
+          'status': 'confirmed',
+          'label': l10n.statusConfirmed,
+          'image': 'assets/icons/status_confirmed_scheduled.png',
+        },
       {
         'status': 'preparing',
         'label': l10n.statusPreparing,
@@ -668,8 +674,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ...steps.asMap().entries.map((entry) {
             final index = entry.key;
             final step = entry.value;
-            final stepIdx = _statusFlow.indexOf(step['status'] as String);
-            final isCompleted = currentStatusIndex >= stepIdx;
+            final stepIdx = statusFlow.indexOf(step['status'] as String);
+            final isCompleted = stepIdx != -1 && currentStatusIndex >= stepIdx;
             final isCurrent = _order!.status == step['status'];
             final isLast = index == steps.length - 1;
 
@@ -679,7 +685,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               isCompleted: isCompleted,
               isCurrent: isCurrent,
               isLast: isLast,
-              currentStatusText: l10n.currentStatus,
+              currentStatusText: _getCurrentTimelineStatusText(l10n),
             );
           }),
         ],
@@ -687,7 +693,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
+  List<String> _statusFlowForOrder(Order order) {
+    return [
+      'placed',
+      if (order.isScheduled) 'confirmed',
+      'preparing',
+      'picked',
+      'delivered',
+    ];
+  }
+
+  String _getCurrentTimelineStatusText(AppLocalizations l10n) {
+    if (_order!.isScheduled &&
+        _order!.status == 'confirmed' &&
+        _order!.preparingAt == null) {
+      return l10n.waitingForScheduledTime;
+    }
+    return l10n.currentStatus;
+  }
+
   Widget _buildRestaurantCard() {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     return _CardWrapper(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -706,7 +732,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     child: Image.network(
                       _order!.restaurantLogo!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.restaurant_rounded,
                         color: ColorsCustom.primary,
                         size: 24,
@@ -722,7 +748,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: TextCustom(
-              text: _order!.restaurantName,
+              text: _order!.getLocalizedRestaurantName(isArabic),
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: ColorsCustom.textPrimary,
@@ -746,7 +772,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               color: ColorsCustom.primarySoft,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Image.asset('assets/icons/driver_illustration.png', fit: BoxFit.contain),
+            child: Image.asset(
+              'assets/icons/driver_illustration.png',
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -774,12 +803,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(26),
+                  color: ColorsCustom.info.withAlpha(26),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.phone_rounded,
-                  color: Colors.blue,
+                  color: ColorsCustom.info,
                   size: 20,
                 ),
               ),
@@ -910,12 +939,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.blue.withAlpha(26),
+              color: ColorsCustom.info.withAlpha(26),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.phone_rounded,
-              color: Colors.blue,
+              color: ColorsCustom.info,
               size: 22,
             ),
           ),
@@ -934,6 +963,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildItemsList(AppLocalizations l10n) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     if (_order!.items.isEmpty) {
       return _CardWrapper(
         margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -983,11 +1013,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           child: Image.network(
                             item.productImage!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.fastfood_rounded,
-                              color: ColorsCustom.primary,
-                              size: 20,
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.fastfood_rounded,
+                                  color: ColorsCustom.primary,
+                                  size: 20,
+                                ),
                           ),
                         )
                       : const Icon(
@@ -1002,14 +1033,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextCustom(
-                        text: item.productName,
+                        text: item.getLocalizedProductName(isArabic),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: ColorsCustom.textPrimary,
                       ),
-                      if (item.variationName != null)
+                      if (item.getLocalizedVariationName(isArabic) != null)
                         TextCustom(
-                          text: item.variationName!,
+                          text: item.getLocalizedVariationName(isArabic)!,
                           fontSize: 12,
                           color: ColorsCustom.textSecondary,
                         ),
@@ -1028,7 +1059,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: TextCustom(
-                                text: '+ ${addon.addonName}',
+                                text: '+ ${addon.getLocalizedName(isArabic)}',
                                 fontSize: 10,
                                 color: ColorsCustom.textSecondary,
                               ),
@@ -1115,7 +1146,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               children: [
                 Icon(
                   Icons.payments_rounded,
-                  color: Colors.green.shade700,
+                  color: ColorsCustom.success,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -1127,7 +1158,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       : _order!.paymentMethodDisplay,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.green.shade700,
+                  color: ColorsCustom.success,
                 ),
               ],
             ),
@@ -1363,7 +1394,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  Map<String, dynamic> _getStatusInfo(String status, AppLocalizations l10n) {
+  Map<String, dynamic> _getStatusInfo(
+    String status,
+    AppLocalizations l10n, {
+    bool isScheduled = false,
+  }) {
     switch (status) {
       case 'draft':
         return {
@@ -1375,12 +1410,25 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         return {
           'label': l10n.statusPlaced,
           'color': ColorsCustom.warning,
-          'image': 'assets/icons/status_confirmed.png',
+          'image': 'assets/icons/status_pending.png',
+        };
+      case 'confirmed':
+        if (!isScheduled) {
+          return {
+            'label': l10n.statusPlaced,
+            'color': ColorsCustom.warning,
+            'image': 'assets/icons/status_pending.png',
+          };
+        }
+        return {
+          'label': l10n.statusConfirmed,
+          'color': ColorsCustom.info,
+          'image': 'assets/icons/status_confirmed_scheduled.png',
         };
       case 'preparing':
         return {
           'label': l10n.statusPreparing,
-          'color': Colors.blue,
+          'color': ColorsCustom.info,
           'image': 'assets/icons/status_preparing.png',
         };
       case 'picked':
@@ -1411,13 +1459,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   String _formatDateTime(DateTime date, AppLocalizations l10n) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays == 0)
-      return '${l10n.today} - ${DateFormat('HH:mm').format(date)}';
-    if (diff.inDays == 1)
-      return '${l10n.yesterday} - ${DateFormat('HH:mm').format(date)}';
-    return DateFormat('dd/MM/yyyy - HH:mm').format(date);
+    return DateTimeFormatter.formatDateTimeWithTodayLabel(date, l10n);
   }
 }
 
