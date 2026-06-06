@@ -124,4 +124,8 @@ lib/
 
 ## License
 
-Released under the [MIT License](LICENSE).
+© 2026 Saeed Alskaf. All rights reserved.
+
+This repository is public for **portfolio and demonstration purposes only**. The
+code is **not** open source — you're welcome to read it, but copying, modifying,
+redistributing, or deploying it is not permitted. See [LICENSE](LICENSE) for details.
