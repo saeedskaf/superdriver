@@ -99,13 +99,12 @@ lib/
    flutter pub get
    ```
 
-3. Configure Firebase:
-   - Place your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) in the appropriate platform directories
-   - Update `firebase_options.dart` with your project credentials
+3. Configure Firebase (these files are git-ignored and not included in the repo):
+   - Run `flutterfire configure` to generate `lib/firebase_options.dart`, `android/app/google-services.json`, and `ios/Runner/GoogleService-Info.plist` for your own Firebase project
 
-4. Add your Google Maps API key:
-   - **Android**: `android/app/src/main/AndroidManifest.xml`
-   - **iOS**: `ios/Runner/AppDelegate.swift`
+4. Add your Google Maps API key (use **restricted** keys — Android: package name + SHA-1, iOS: bundle ID):
+   - **Android**: add `MAPS_API_KEY=your_key` to `android/local.properties` (git-ignored; injected into the manifest at build time)
+   - **iOS**: replace `YOUR_IOS_GOOGLE_MAPS_API_KEY` in `ios/Runner/AppDelegate.swift`
 
 5. Run the app:
    ```bash
@@ -122,3 +121,7 @@ lib/
   <img src="screenshots/order_tracking.png" alt="Order Tracking" width="200" />
   <img src="screenshots/promo.png" alt="Promo" width="200" />
 </p>
+
+## License
+
+Released under the [MIT License](LICENSE).

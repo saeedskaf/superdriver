@@ -32,6 +32,16 @@ ios/Flutter/Flutter.podspec
 # Android
 android/.gradle/
 android/app/build/
+android/local.properties
+**/local.properties
+
+# Secrets / signing
+key.properties
+*.jks
+*.keystore
+
+# Generated localizations build cache
+lib/l10n/build/
 
 # Firebase
 google-services.json

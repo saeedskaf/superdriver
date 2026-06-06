@@ -17,6 +17,14 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// Load secrets (e.g. the Google Maps API key) from local.properties, which is git-ignored.
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
+
 android {
     namespace = "com.narj.superdriverapp"
     compileSdk = flutter.compileSdkVersion
@@ -41,6 +49,8 @@ android {
         versionName = flutter.versionName
         // Required for desugaring
         multiDexEnabled = true
+        // Inject the Google Maps API key from local.properties (not committed to git)
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     signingConfigs {

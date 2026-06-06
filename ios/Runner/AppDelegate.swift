@@ -14,8 +14,8 @@ import FirebaseMessaging
     // 1. Firebase MUST be configured first
     FirebaseApp.configure()
 
-    // 2. Google Maps
-    GMSServices.provideAPIKey("AIzaSyDmj9ARGLzdN10hA312d503vSqjnr6Dj64")
+    // 2. Google Maps — replace with your own (restricted) iOS Maps SDK key
+    GMSServices.provideAPIKey("YOUR_IOS_GOOGLE_MAPS_API_KEY")
 
     // 3. Push notification delegate
     if #available(iOS 10.0, *) {
